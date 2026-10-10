@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkyVoyage — Recherche, Consultation, Comparaison & Suggestions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- Barre de navigation principale -->
+    <header class="navbar">
+        <div class="container navbar-content">
+            <div class="brand">
+                <div class="brand-logo">✈️</div>
+                <div>
+                    <span class="brand-title">SkyVoyage</span>
+                    <span class="brand-subtitle">Recherche, Consultation, Comparaison & Suggestions d'Offres</span>
+                </div>
+            </div>
+
+            <nav class="nav-tabs" role="tablist">
+                <button class="nav-tab active" data-tab="recherche" onclick="changerOnglet('recherche')">
+                    🔍 Rechercher & Filtrer
+                </button>
+                <button class="nav-tab" data-tab="billets" onclick="changerOnglet('billets')">
+                    🎫 Explorateur de Billets
+                </button>
+                <button class="nav-tab" data-tab="comparateur" onclick="changerOnglet('comparateur')">
+                    ⚖️ Comparateur <span id="badge-comparateur" class="tab-counter">0</span>
+                </button>
+                <button class="nav-tab" data-tab="suggestions" onclick="changerOnglet('suggestions')">
+                    ✨ Suggestions & Promos
+                </button>
+            </nav>
+
+            <div class="navbar-actions">
+                <button class="btn btn-outline-light btn-sm" onclick="ouvrirModalNouvelleOffre()">
+                    + Ajouter une offre
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Bannière Hero & Barre de Recherche Rapide -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-header">
+                <div>
+                    <h1>Trouvez, comparez et réservez le voyage ou billet idéal</h1>
+                    <p>Explorez nos vols, trains, traversées maritimes et séjours packagés avec tri intelligent, comparateur côte-à-côte et recommandations personnalisées.</p>
+                </div>
+                <div class="stats-bar" id="stats-bar">
+                    <div class="stat-chip">
+                        <span class="stat-val" id="stat-voyages">8</span>
+                        <span class="stat-lbl">Offres Voyages</span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-val" id="stat-billets">13</span>
+                        <span class="stat-lbl">Tarifs Billets</span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-val" id="stat-promos">7</span>
+                        <span class="stat-lbl">En Promotion</span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-val" id="stat-vues">2 180</span>
+                        <span class="stat-lbl">Consultations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de recherche multicritères principal -->
+            <div class="search-card">
+                <div class="search-grid">
+                    <div class="search-field">
+                        <label for="search-motcle">🔎 Mot-clé / Compagnie / Code</label>
+                        <input type="text" id="search-motcle" placeholder="Ex: Paris, Turkish Airlines, Eurostar..." oninput="appliquerFiltres()" />
+                    </div>
+                    <div class="search-field">
+                        <label for="search-depart">🛫 Ville de départ</label>
+                        <select id="search-depart" onchange="appliquerFiltres()">
+                            <option value="">Toutes les villes de départ</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <label for="search-destination">🛬 Ville de destination</label>
+                        <select id="search-destination" onchange="appliquerFiltres()">
+                            <option value="">Toutes les destinations</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <label for="search-transport">🚆 Mode de transport</label>
+                        <select id="search-transport" onchange="appliquerFiltres()">
+                            <option value="">Tous les transports</option>
+                            <option value="VOL">✈️ Vol (Avion)</option>
+                            <option value="TRAIN">🚄 Train Grande Vitesse</option>
+                            <option value="BATEAU">⛴️ Bateau / Ferry</option>
+                            <option value="SEJOUR_PACK">🏖️ Séjour Packagé</option>
+                            <option value="BUS">🚌 Bus Confort</option>
+                        </select>
+                    </div>
+                    <div class="search-field search-actions">
+                        <button class="btn btn-primary btn-block" onclick="appliquerFiltres()">
+                            Rechercher
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="reinitialiserFiltres()">
+                            Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTENU PRINCIPAL PAR ONGLET -->
+    <main class="container main-container">
+
+        <!-- ===============================================================
+             ONGLET 1 : RECHERCHER, FILTRER & TRIER LES VOYAGES
+             =============================================================== -->
+        <section id="tab-recherche" class="tab-panel active">
+            <div class="layout-sidebar-main">
+                <!-- Colonne Filtres Avancés -->
+                <aside class="filters-sidebar">
+                    <div class="sidebar-header">
+                        <h3>🎛️ Filtres avancés</h3>
+                        <button class="link-btn" onclick="reinitialiserFiltres()">Tout effacer</button>
+                    </div>
+
+                    <!-- Budget Maximum -->
+                    <div class="filter-group">
+                        <div class="filter-label-row">
+                            <label for="filter-prix-max">💰 Budget max</label>
+                            <span class="price-badge" id="prix-max-display">1 800 TND</span>
+                        </div>
+                        <input type="range" id="filter-prix-max" min="200" max="1800" step="25" value="1800" oninput="mettreAJourLabelPrix(); appliquerFiltres();" />
+                        <div class="range-extremes">
+                            <span>200 TND</span>
+                            <span>1 800 TND</span>
+                        </div>
+                    </div>
+
+                    <!-- Catégorie d'offre -->
+                    <div class="filter-group">
+                        <label for="filter-categorie">🏷️ Catégorie d'offre</label>
+                        <select id="filter-categorie" onchange="appliquerFiltres()">
+                            <option value="">Toutes les catégories</option>
+                            <option value="ECONOMIQUE">Économique</option>
+                            <option value="CONFORT">Confort</option>
+                            <option value="PREMIUM">Premium</option>
+                            <option value="LUXE">Luxe / Prestige</option>
+                            <option value="PROMO">Offre Spéciale Promo</option>
+                        </select>
+                    </div>
+
+                    <!-- Classe de billet souhaitée -->
+                    <div class="filter-group">
+                        <label for="filter-classe">💺 Classe de billet disponible</label>
+                        <select id="filter-classe" onchange="appliquerFiltres()">
+                            <option value="">Toutes les classes</option>
+                            <option value="ECONOMIQUE">Économique</option>
+                            <option value="PREMIUM_ECO">Premium Éco</option>
+                            <option value="BUSINESS">Business Class</option>
+                            <option value="PREMIERE">Première Classe</option>
+                        </select>
+                    </div>
+
+                    <!-- Compagnie -->
+                    <div class="filter-group">
+                        <label for="filter-compagnie">🏢 Compagnie</label>
+                        <select id="filter-compagnie" onchange="appliquerFiltres()">
+                            <option value="">Toutes les compagnies</option>
+                        </select>
+                    </div>
+
+                    <!-- Note minimale -->
+                    <div class="filter-group">
+                        <label for="filter-note">⭐ Note minimale voyageurs</label>
+                        <select id="filter-note" onchange="appliquerFiltres()">
+                            <option value="0">Toutes les notes</option>
+                            <option value="4.5">⭐ 4.5 / 5 et plus</option>
+                            <option value="4.7">🌟 4.7 / 5 et plus (Excellent)</option>
+                            <option value="4.85">🏆 4.85 / 5 et plus (Exceptionnel)</option>
+                        </select>
+                    </div>
+
+                    <!-- Options & Services Inclus -->
+                    <div class="filter-group">
+                        <label class="group-title">✨ Critères & Services inclus</label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="filter-direct" onchange="appliquerFiltres()" />
+                            <span>Trajet direct uniquement (0 escale)</span>
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="filter-promo" onchange="appliquerFiltres()" />
+                            <span>Offres en promotion uniquement</span>
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="filter-soute" onchange="appliquerFiltres()" />
+                            <span>🧳 Bagage en soute inclus</span>
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="filter-annulation" onchange="appliquerFiltres()" />
+                            <span>🛡️ Annulation gratuite</span>
+                        </label>
+                    </div>
+                </aside>
+
+                <!-- Zone Résultats & Barre de Tri -->
+                <div class="results-area">
+                    <div class="results-toolbar">
+                        <div class="results-count">
+                            <strong id="resultats-count">8</strong> offre(s) trouvée(s)
+                            <span id="active-filters-summary" class="active-filters-text"></span>
+                        </div>
+
+                        <div class="sort-controls">
+                            <label for="sort-by">Trier par :</label>
+                            <select id="sort-by" onchange="appliquerFiltres()">
+                                <option value="prix-asc">💶 Prix : du moins cher au plus cher</option>
+                                <option value="prix-desc">💶 Prix : du plus cher au moins cher</option>
+                                <option value="score-desc">🏆 Meilleur rapport Qualité / Prix</option>
+                                <option value="duree-asc">⚡ Durée : trajet le plus rapide</option>
+                                <option value="note-desc">⭐ Meilleure note voyageurs</option>
+                                <option value="popularite-desc">🔥 Popularité (plus consultés)</option>
+                                <option value="dateDepart-asc">📅 Date de départ la plus proche</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Grille des cartes de voyages -->
+                    <div id="voyages-grid" class="voyages-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===============================================================
+             ONGLET 2 : EXPLORATEUR & RECHERCHE DE BILLETS PAR CLASSE
+             =============================================================== -->
+        <section id="tab-billets" class="tab-panel">
+            <div class="section-banner">
+                <div>
+                    <h2>🎫 Recherche et Filtrage Direct des Offres de Billets</h2>
+                    <p>Comparez les tarifs de billets par classe (Économique, Premium Éco, Business, Première), franchise bagage en soute et conditions de remboursement.</p>
+                </div>
+            </div>
+
+            <div class="ticket-filters-bar">
+                <div class="search-field">
+                    <label for="billet-classe">💺 Classe de billet</label>
+                    <select id="billet-classe" onchange="filtrerBillets()">
+                        <option value="">Toutes les classes</option>
+                        <option value="ECONOMIQUE">Économique</option>
+                        <option value="PREMIUM_ECO">Premium Éco</option>
+                        <option value="BUSINESS">Business</option>
+                        <option value="PREMIERE">Première Classe</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="billet-bagage">🧳 Bagage soute min (kg)</label>
+                    <select id="billet-bagage" onchange="filtrerBillets()">
+                        <option value="0">Peu importe (0 kg+)</option>
+                        <option value="20">Au moins 20 kg</option>
+                        <option value="30">Au moins 30 kg</option>
+                        <option value="40">Au moins 40 kg</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="billet-tri">🔃 Trier les billets par</label>
+                    <select id="billet-tri" onchange="filtrerBillets()">
+                        <option value="prix-asc">Prix croissant</option>
+                        <option value="prix-desc">Prix décroissant</option>
+                        <option value="bagage-desc">Franchise bagage soute (kg)</option>
+                        <option value="places-desc">Places disponibles</option>
+                    </select>
+                </div>
+                <div class="ticket-checkboxes">
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="billet-modifiable" onchange="filtrerBillets()" />
+                        <span>🔄 Billet modifiable</span>
+                    </label>
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="billet-remboursable" onchange="filtrerBillets()" />
+                        <span>💸 Billet remboursable</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="billets-grid" class="billets-grid"></div>
+        </section>
+
+        <!-- ===============================================================
+             ONGLET 3 : COMPARATEUR D'OFFRES CÔTE-À-CÔTE
+             =============================================================== -->
+        <section id="tab-comparateur" class="tab-panel">
+            <div class="section-banner">
+                <div>
+                    <h2>⚖️ Comparateur Intelligent d'Offres Côte-à-Côte</h2>
+                    <p>Sélectionnez entre 2 et 4 offres pour analyser leurs tarifs, durées, franchises bagages, services inclus et score qualité/prix.</p>
+                </div>
+                <div class="banner-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="chargerExempleComparaison()">
+                        ⚡ Charger un exemple (3 offres Paris & Rome)
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="viderComparateur()">
+                        🗑️ Vider la sélection
+                    </button>
+                </div>
+            </div>
+
+            <div id="comparateur-container"></div>
+        </section>
+
+        <!-- ===============================================================
+             ONGLET 4 : SUGGESTIONS & RECOMMANDATIONS INTELLIGENTES
+             =============================================================== -->
+        <section id="tab-suggestions" class="tab-panel">
+            <div class="section-banner">
+                <div>
+                    <h2>✨ Suggestions & Recommandations Intelligentes</h2>
+                    <p>Propositions personnalisées générées selon la popularité des consultations, les promotions actives, votre budget et le score qualité/prix.</p>
+                </div>
+                <div class="suggestion-customizer">
+                    <select id="sugg-destination" onchange="rafraichirSuggestions()">
+                        <option value="">🌍 Toutes destinations</option>
+                        <option value="Paris">🇫🇷 Focus : Paris</option>
+                        <option value="Istanbul">🇹🇷 Focus : Istanbul</option>
+                        <option value="Rome">🇮🇹 Focus : Rome</option>
+                        <option value="Dubaï">🇦🇪 Focus : Dubaï</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="suggestions-container" class="suggestions-wrapper"></div>
+        </section>
+
+    </main>
+
+    <!-- Barre flottante du comparateur (visible dès qu'au moins 1 offre est sélectionnée) -->
+    <div id="floating-compare-bar" class="floating-compare-bar hidden">
+        <div class="container floating-compare-inner">
+            <div class="compare-selected-info">
+                <span class="compare-icon">⚖️</span>
+                <div>
+                    <strong><span id="floating-compare-count">0</span> offre(s) sélectionnée(s) pour comparaison</strong>
+                    <div id="floating-compare-chips" class="compare-chips"></div>
+                </div>
+            </div>
+            <div class="compare-bar-buttons">
+                <button class="btn btn-ghost-light btn-sm" onclick="viderComparateur()">Annuler</button>
+                <button class="btn btn-accent" onclick="changerOnglet('comparateur')">
+                    Comparer maintenant →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE DE CONSULTATION DÉTAILLÉE D'UNE OFFRE + BILLETS + SUGGESTIONS SIMILAIRES -->
+    <div id="modal-detail" class="modal-backdrop hidden" onclick="fermerModalDetailSiClicExterieur(event)">
+        <div class="modal-card modal-lg">
+            <button class="modal-close" onclick="fermerModalDetail()">✕</button>
+            <div id="modal-detail-body"></div>
+        </div>
+    </div>
+
+    <!-- MODALE D'AJOUT / MODIFICATION D'UNE OFFRE (CRUD POST & PUT) -->
+    <div id="modal-nouvelle-offre" class="modal-backdrop hidden" onclick="fermerModalNouvelleOffreSiExterieur(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-offre-title">➕ Créer une nouvelle offre de voyage</h3>
+                <button class="modal-close" onclick="fermerModalNouvelleOffre()">✕</button>
+            </div>
+            <form id="form-nouvelle-offre" onsubmit="soumettreNouvelleOffre(event)">
+                <input type="hidden" id="edit-voyage-id" value="" />
+                <div class="form-grid">
+                    <div class="search-field">
+                        <label>Titre de l'offre *</label>
+                        <input type="text" id="new-titre" required placeholder="Ex: Vol Direct Tunis → Madrid" />
+                    </div>
+                    <div class="search-field">
+                        <label>Code Voyage *</label>
+                        <input type="text" id="new-code" required placeholder="Ex: VOY-TUN-MAD-801" />
+                    </div>
+                    <div class="search-field">
+                        <label>Ville de départ *</label>
+                        <input type="text" id="new-depart" required value="Tunis" />
+                    </div>
+                    <div class="search-field">
+                        <label>Ville de destination *</label>
+                        <input type="text" id="new-destination" required placeholder="Ex: Madrid" />
+                    </div>
+                    <div class="search-field">
+                        <label>Pays de destination *</label>
+                        <input type="text" id="new-pays" required placeholder="Ex: Espagne" />
+                    </div>
+                    <div class="search-field">
+                        <label>Compagnie *</label>
+                        <input type="text" id="new-compagnie" required placeholder="Ex: Iberia / Tunisair" />
+                    </div>
+                    <div class="search-field">
+                        <label>Type de transport *</label>
+                        <select id="new-transport">
+                            <option value="VOL">VOL</option>
+                            <option value="TRAIN">TRAIN</option>
+                            <option value="BATEAU">BATEAU</option>
+                            <option value="SEJOUR_PACK">SEJOUR_PACK</option>
+                            <option value="BUS">BUS</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <label>Catégorie *</label>
+                        <select id="new-categorie">
+                            <option value="CONFORT">CONFORT</option>
+                            <option value="ECONOMIQUE">ECONOMIQUE</option>
+                            <option value="PREMIUM">PREMIUM</option>
+                            <option value="LUXE">LUXE</option>
+                            <option value="PROMO">PROMO</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <label>Prix de base (TND) *</label>
+                        <input type="number" id="new-prix-base" required min="50" value="520" />
+                    </div>
+                    <div class="search-field">
+                        <label>Prix Promo (TND, optionnel)</label>
+                        <input type="number" id="new-prix-promo" min="0" value="390" />
+                    </div>
+                    <div class="search-field">
+                        <label>Durée (en minutes) *</label>
+                        <input type="number" id="new-duree" required min="20" value="140" />
+                    </div>
+                    <div class="search-field">
+                        <label>Places disponibles *</label>
+                        <input type="number" id="new-places" required min="0" value="25" />
+                    </div>
+                </div>
+                <div class="search-field" style="margin-top: 12px;">
+                    <label>Description de l'offre</label>
+                    <textarea id="new-description" rows="2" placeholder="Détails du trajet, services inclus, conditions..."></textarea>
+                </div>
+                <div class="form-checkboxes">
+                    <label class="checkbox-row"><input type="checkbox" id="new-soute" checked /> Bagage soute inclus</label>
+                    <label class="checkbox-row"><input type="checkbox" id="new-annulation" checked /> Annulation gratuite</label>
+                    <label class="checkbox-row"><input type="checkbox" id="new-repas" checked /> Repas inclus</label>
+                    <label class="checkbox-row"><input type="checkbox" id="new-wifi" /> Wi-Fi à bord</label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="fermerModalNouvelleOffre()">Annuler</button>
+                    <button type="submit" id="btn-submit-offre" class="btn btn-primary">Enregistrer l'offre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
