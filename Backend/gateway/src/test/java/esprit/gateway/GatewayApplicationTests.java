@@ -30,7 +30,9 @@ class GatewayApplicationTests {
 
         assertNotNull(routes);
         assertEquals(URI.create("lb://gestion-bagages"), routes.get("bagages"));
+        assertEquals(URI.create("lb://reservation-paiement"), routes.get("paiements"));
+        assertEquals(URI.create("lb://reservation-paiement"), routes.get("transactions"));
         assertEquals(URI.create("http://localhost:8003"), routes.get("reservations"));
-        assertEquals(2, routes.size());
+        assertEquals(4, routes.size());
     }
 }

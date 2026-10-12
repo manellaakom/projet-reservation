@@ -23,6 +23,10 @@ public class GatewayApplication {
         return builder.routes()
                 .route("bagages", route -> route.path("/api/bagages/**")
                         .uri("lb://gestion-bagages"))
+                .route("paiements", route -> route.path("/api/paiements/**")
+                    .uri("lb://reservation-paiement"))
+                .route("transactions", route -> route.path("/api/transactions/**")
+                    .uri("lb://reservation-paiement"))
                 .route("reservations", route -> route.path("/api/v1/**")
                         .uri("http://localhost:8003"))
                 .build();
