@@ -1,1 +1,77 @@
+# Diagramme de Classes — Module 2 (Recherche & Consultation)
 
+```mermaid
+classDiagram
+    class Voyage {
+        +Long id
+        +String codeVoyage
+        +String titre
+        +String description
+        +String villeDepart
+        +String villeDestination
+        +String paysDestination
+        +String compagnie
+        +TypeTransport typeTransport
+        +CategorieOffre categorie
+        +LocalDateTime dateDepart
+        +LocalDateTime dateArrivee
+        +Integer dureeMinutes
+        +Integer escales
+        +BigDecimal prixBase
+        +BigDecimal prixPromo
+        +Boolean enPromotion
+        +Integer placesDisponibles
+        +Double noteMoyenne
+        +Integer nombreAvis
+        +Integer nombreConsultations
+        +Boolean bagageCabineInclus
+        +Boolean bagageSouteInclus
+        +Boolean annulationGratuite
+        +Boolean repasInclus
+        +Boolean wifiDisponible
+        +StatutOffre statut
+        +getPrixEffectif() BigDecimal
+    }
+
+    class OffreBillet {
+        +Long id
+        +String codeOffreBillet
+        +ClasseBillet classe
+        +BigDecimal prix
+        +Integer placesRestantes
+        +Integer bagageCabineKg
+        +Integer bagageSouteKg
+        +Boolean modifiable
+        +Boolean remboursable
+        +Boolean choixSiegeGratuit
+        +Boolean accesSalonVip
+        +String conditionsTarifaires
+    }
+
+    class HistoriqueRecherche {
+        +Long id
+        +String motCle
+        +String villeDepart
+        +String villeDestination
+        +TypeTransport typeTransport
+        +ClasseBillet classeBillet
+        +BigDecimal budgetMax
+        +Integer nombreResultats
+        +LocalDateTime dateRecherche
+    }
+
+    class RechercheConsultationService {
+        +rechercherEtFiltrerVoyages(CritereRechercheRequest) List~VoyageResponse~
+        +rechercherBillets(...) List~OffreBilletDto~
+        +consulterVoyageParId(Long id) VoyageResponse
+        +comparerOffres(List~Long~ ids) ComparaisonResponse
+        +obtenirSuggestionsGlobales(...) SuggestionsResponse
+        +obtenirSuggestionsPourOffre(Long id) SuggestionsResponse
+        +getStatistiquesEtFiltres() StatistiquesRechercheResponse
+    }
+
+    Voyage "1" *-- "1..*" OffreBillet : contient
+    RechercheConsultationService ..> Voyage : gère & filtre
+    RechercheConsultationService ..> OffreBillet : recherche & trie
+    RechercheConsultationService ..> HistoriqueRecherche : enregistre
+```

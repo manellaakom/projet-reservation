@@ -1,1 +1,30 @@
+# Diagramme de Cas d'Utilisation — Module 2 (Recherche & Consultation)
 
+```mermaid
+flowchart LR
+    Voyageur(["👤 Voyageur / Client"])
+    Admin(["🛠️ Administrateur Catalogue"])
+
+    subgraph Module2["Module 2 : Recherche & Consultation de Voyages et Billets"]
+        UC1("Rechercher des voyages et des billets")
+        UC2("Filtrer les résultats (budget, dates, classe, bagage, direct, promo)")
+        UC3("Trier les offres (prix, durée, note, popularité, score qualité/prix)")
+        UC4("Consulter le détail d'une offre et ses classes de billets")
+        UC5("Comparer plusieurs offres côte-à-côte (2 à 5 offres)")
+        UC6("Recevoir des suggestions intelligentes (similaires, promos, tendances)")
+        UC7("Gérer le catalogue d'offres et billets (Ajout, Modification, Suppression)")
+    end
+
+    Voyageur --> UC1
+    Voyageur --> UC2
+    Voyageur --> UC3
+    Voyageur --> UC4
+    Voyageur --> UC5
+    Voyageur --> UC6
+
+    UC1 -.->|inclut| UC2
+    UC1 -.->|inclut| UC3
+    UC4 -.->|étend| UC6
+
+    Admin --> UC7
+```

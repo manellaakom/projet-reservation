@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New SupportResponse{% endblock %}
+
+{% block body %}
+    <h1>Create new SupportResponse</h1>
+
+    {{ include('support_response/_form.html.twig') }}
+
+    <a href="{{ path('app_support_response_index') }}">back to list</a>
+{% endblock %}

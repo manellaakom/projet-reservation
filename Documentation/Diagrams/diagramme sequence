@@ -1,1 +1,63 @@
+# Diagrammes de Séquence — Module 2 (Recherche, Consultation, Comparaison & Suggestions)
 
+## 1. Séquence : Recherche multicritères, Filtrage et Tri des Voyages & Billets
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Voyageur as Voyageur (Frontend UI)
+    participant UI as Frontend Angular / Web
+    participant Ctrl as RechercheConsultationController
+    participant Svc as RechercheConsultationService
+    participant Repo as VoyageRepository / OffreBilletRepository
+    participant DB as MySQL (recherche_consultation_db)
+
+    Voyageur->>UI: Saisit critères (Destination, Dates, Budget, Transport, Classe, Tri)
+    UI->>Ctrl: GET /api/recherche/voyages?villeDestination=Paris&prixMax=500&sortBy=prix
+    Ctrl->>Svc: rechercherEtFiltrerVoyages(CritereRechercheRequest)
+    Svc->>Repo: findAll() / filtrage multicritères
+    Repo->>DB: SELECT * FROM voyages JOIN offres_billets
+    DB-->>Repo: Liste des entités Voyage + OffreBillet
+    Svc->>Svc: Calcul prixEffectif, réduction %, scoreQualitePrix (/100) et tri
+    Svc->>Repo: save(HistoriqueRecherche)
+    Repo->>DB: INSERT INTO historiques_recherches
+    Svc-->>Ctrl: List<VoyageResponse>
+    Ctrl-->>UI: 200 OK (JSON List<VoyageResponse>)
+    UI-->>Voyageur: Affiche les offres filtrées, triées avec badges et scores
+```
+
+---
+
+## 2. Séquence : Consultation détaillée d'une offre, Comparaison et Suggestions
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Voyageur as Voyageur (Frontend UI)
+    participant UI as Frontend Angular / Web
+    participant Ctrl as RechercheConsultationController
+    participant Svc as RechercheConsultationService
+    participant DB as MySQL (recherche_consultation_db)
+
+    Voyageur->>UI: Clique sur "Consulter & Billets" (Offre ID=1)
+    UI->>Ctrl: GET /api/recherche/voyages/1
+    Ctrl->>Svc: consulterVoyageParId(1)
+    Svc->>DB: UPDATE voyages SET nombre_consultations = nombre_consultations + 1 WHERE id = 1
+    Svc->>DB: SELECT * FROM voyages + offres_billets WHERE id = 1
+    DB-->>Svc: Voyage + Billets (ECONOMIQUE, BUSINESS...)
+    Svc-->>Ctrl: VoyageResponse
+    Ctrl-->>UI: 200 OK (Détails + Billets)
+
+    UI->>Ctrl: GET /api/recherche/voyages/1/suggestions
+    Ctrl->>Svc: obtenirSuggestionsPourOffre(1)
+    Svc->>DB: Recherche offres similaires & alternatives moins chères
+    Svc-->>Ctrl: SuggestionsResponse
+    Ctrl-->>UI: 200 OK (Offres similaires + Alternatives budget)
+
+    Voyageur->>UI: Sélectionne 3 offres et ouvre le Comparateur
+    UI->>Ctrl: GET /api/recherche/comparer?ids=1,2,4
+    Ctrl->>Svc: comparerOffres([1, 2, 4])
+    Svc->>Svc: Détermine moins chère, plus rapide, mieux notée, meilleur score qualité/prix
+    Svc-->>Ctrl: ComparaisonResponse (avec synthèse intelligente)
+    Ctrl-->>UI: 200 OK (Tableau comparatif côte-à-côte)
+```

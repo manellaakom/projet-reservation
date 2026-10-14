@@ -1,1 +1,28 @@
+# Architecture Globale Microservices — Projet Réservation
 
+```mermaid
+flowchart TB
+    UI["🖥️ Frontend Web / Angular UI"]
+    Eureka["🧭 Eureka Discovery Server (:8761)"]
+
+    subgraph Microservices["Backend Microservices"]
+        M1["🧳 Module 1 : Gestion des Bagages\nSpring Boot (:8081) + Redis"]
+        M2["🔍 Module 2 : Recherche & Consultation\nSpring Boot (:8082) + MySQL (recherche_consultation_db)"]
+        M3["📅 Module 3 : Gestion de Réservation\nFastAPI Python (:8000) + MySQL (reservation_db)"]
+        M4["💳 Module 4 : Réservation & Paiement"]
+        M5["🎧 Module 5 : Support Client\nSymfony PHP + MySQL/PostgreSQL"]
+    end
+
+    UI --> M1
+    UI --> M2
+    UI --> M3
+    UI --> M4
+    UI --> M5
+
+    M1 -.->|Register / Discover| Eureka
+    M2 -.->|Register / Discover| Eureka
+    M3 -.->|Register / Discover| Eureka
+
+    M2 -->|OpenFeign : Vérification Disponibilités| M3
+    M3 -->|Association Bagages| M1
+```
