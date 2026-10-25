@@ -23,6 +23,11 @@ public class GatewayApplication {
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route("root", route -> route.path("/")
+                        .filters(f -> f.redirect(302, "/api/recherche/voyages"))
+                        .uri("lb://recherche-consultation"))
+                .route("swagger", route -> route.path("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                        .uri("lb://recherche-consultation"))
                 .route("recherche", route -> route.path("/api/recherche/**")
                         .uri("lb://recherche-consultation"))
                 .route("bagages", route -> route.path("/api/bagages/**")
@@ -36,6 +41,24 @@ public class GatewayApplication {
                 .route("support", route -> route.path("/support/**")
                         .uri("http://localhost:8000"))
                 .build();
+    }
+
+    @org.springframework.web.bind.annotation.RestController
+    static class GatewayActuatorFallbackController {
+        @org.springframework.web.bind.annotation.GetMapping("/actuator/info")
+        public reactor.core.publisher.Mono<java.util.Map<String, Object>> info() {
+            return reactor.core.publisher.Mono.just(java.util.Map.of(
+                    "app", "gateway",
+                    "service", "api-gateway",
+                    "status", "UP",
+                    "port", 8080
+            ));
+        }
+
+        @org.springframework.web.bind.annotation.GetMapping("/actuator/health")
+        public reactor.core.publisher.Mono<java.util.Map<String, String>> health() {
+            return reactor.core.publisher.Mono.just(java.util.Map.of("status", "UP"));
+        }
     }
 
     @Bean
