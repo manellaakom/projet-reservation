@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SupportRequest{% endblock %}
+
+{% block body %}
+    <h1>SupportRequest</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ support_request.id }}</td>
+            </tr>
+            <tr>
+                <th>Sujet</th>
+                <td>{{ support_request.sujet }}</td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td>{{ support_request.description }}</td>
+            </tr>
+            <tr>
+                <th>Categorie</th>
+                <td>{{ support_request.categorie }}</td>
+            </tr>
+            <tr>
+                <th>Statut</th>
+                {{ support_request.status ? support_request.status.label() : '' }}
+            </tr>
+            <tr>
+                <th>DateCreation</th>
+                <td>{{ support_request.dateCreation ? support_request.dateCreation|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>DateMiseAJour</th>
+                <td>{{ support_request.dateMiseAJour ? support_request.dateMiseAJour|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_support_request_index') }}">back to list</a>
+
+    <a href="{{ path('app_support_request_edit', {'id': support_request.id}) }}">edit</a>
+
+    {{ include('support_request/_delete_form.html.twig') }}
+{% endblock %}

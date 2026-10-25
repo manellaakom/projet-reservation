@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SupportResponse index{% endblock %}
+
+{% block body %}
+    <h1>SupportResponse index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Contenu</th>
+                <th>Auteur</th>
+                <th>DateReponse</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for support_response in support_responses %}
+            <tr>
+                <td>{{ support_response.id }}</td>
+                <td>{{ support_response.contenu }}</td>
+                <td>{{ support_response.auteur }}</td>
+                <td>{{ support_response.dateReponse ? support_response.dateReponse|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_support_response_show', {'id': support_response.id}) }}">show</a>
+                    <a href="{{ path('app_support_response_edit', {'id': support_response.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_support_response_new') }}">Create new</a>
+{% endblock %}

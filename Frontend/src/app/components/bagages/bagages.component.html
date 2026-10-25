@@ -1,0 +1,1100 @@
+<!-- Toast Notifications -->
+<div class="toast-container">
+  <div *ngFor="let t of toasts" class="toast" [ngClass]="'toast-' + t.type">
+    <i class="toast-icon pi" [ngClass]="{
+      'pi-check-circle': t.type === 'success',
+      'pi-exclamation-triangle': t.type === 'error',
+      'pi-info-circle': t.type === 'info'
+    }"></i>
+    <div class="toast-content">
+      <div class="toast-title">{{ t.title }}</div>
+      <div class="toast-message">{{ t.message }}</div>
+    </div>
+    <button class="toast-close" (click)="closeToast(t.id)">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Header de la vue -->
+<div class="view-header">
+  <div>
+    <h1 class="view-title">Tableau de bord — Gestion des Bagages</h1>
+    <p class="view-subtitle">Supervision, tarification automatique (30 / 50 / 70 DT) et persistance Redis via l'API Gateway</p>
+  </div>
+  <div class="view-actions">
+    <button class="btn btn-outline" (click)="openHistoryModal()" title="Consulter l'historique des opérations de la session">
+      <i class="pi pi-history"></i>
+      <span>Historique</span>
+      <span *ngIf="operationsHistory.length > 0" class="badge-count">{{ operationsHistory.length }}</span>
+    </button>
+    <button class="btn btn-secondary" (click)="exportToCsv()" [disabled]="filteredBagages.length === 0" title="Exporter les données filtrées au format CSV Excel">
+      <i class="pi pi-file-excel"></i>
+      <span>Exporter CSV</span>
+    </button>
+    <button class="btn btn-secondary" (click)="loadAllData()" [disabled]="loading">
+      <i class="pi pi-refresh" [ngClass]="{'pi-spin': loading}"></i>
+      <span>Actualiser</span>
+    </button>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="pi pi-plus"></i>
+      <span>Nouveau Bagage</span>
+    </button>
+  </div>
+</div>
+
+<!-- Erreur de connexion éventuelle -->
+<div *ngIf="error" class="card banner-error">
+  <i class="pi pi-exclamation-circle banner-icon"></i>
+  <div class="banner-body">
+    <h4>Communication Gateway / Microservice interrompue</h4>
+    <p>{{ error }}</p>
+    <small>Vérifiez que Docker Redis (`localhost:6379`), Eureka (`localhost:8761`) et la Gateway (`localhost:8080`) sont actifs.</small>
+  </div>
+  <button class="btn btn-outline" (click)="loadAllData()">Réessayer</button>
+</div>
+
+<!-- Cartes de Statistiques (Style Sakai PrimeNG) -->
+<div class="stat-grid">
+  <!-- 1. Total Bagages (Interactif : Affiche tous les bagages et réinitialise les filtres) -->
+  <div
+    class="stat-card interactive"
+    [class.active]="selectedStatutFilter === 'ALL' && !searchTerm"
+    (click)="filterByCard('ALL')"
+    title="Afficher tous les bagages et réinitialiser les filtres"
+  >
+    <div class="stat-content">
+      <span class="stat-label">Total Bagages</span>
+      <span class="stat-value">{{ statistics?.totalBagages ?? bagages.length }}</span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-replay"></i> Tous les bagages</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper blue">
+      <i class="pi pi-briefcase"></i>
+    </div>
+  </div>
+
+  <!-- 2. Bagages Validés / Enregistrés (Interactif : Filtre sur les bagages validés) -->
+  <div
+    class="stat-card interactive"
+    [class.active]="selectedStatutFilter === 'REGISTER'"
+    (click)="filterByCard('REGISTER')"
+    title="Cliquer pour afficher uniquement les bagages validés"
+  >
+    <div class="stat-content">
+      <span class="stat-label">Validés / Enregistrés</span>
+      <span class="stat-value text-success">{{ statistics?.registeredBagages ?? registeredCount }}</span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-filter"></i> Filtrer les validés</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper green">
+      <i class="pi pi-check-circle"></i>
+    </div>
+  </div>
+
+  <!-- 3. Bagages En Attente (Interactif : Filtre sur les bagages en attente) -->
+  <div
+    class="stat-card interactive"
+    [class.active]="selectedStatutFilter === 'PENDING'"
+    (click)="filterByCard('PENDING')"
+    title="Cliquer pour afficher uniquement les bagages en attente"
+  >
+    <div class="stat-content">
+      <span class="stat-label">En Attente</span>
+      <span class="stat-value text-warning">{{ statistics?.pendingBagages ?? pendingCount }}</span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-filter"></i> Filtrer les attentes</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper amber">
+      <i class="pi pi-clock"></i>
+    </div>
+  </div>
+
+  <!-- 4. Poids Total Cumulé (Interactif : Ouvre la répartition du poids par catégorie) -->
+  <div
+    class="stat-card interactive"
+    (click)="openWeightDetailModal()"
+    title="Cliquer pour afficher la répartition du poids cumulé et le détail par bagage"
+  >
+    <div class="stat-content">
+      <span class="stat-label">Poids Total Cumulé</span>
+      <span class="stat-value">{{ statistics?.totalWeight ?? 0 }} <small>kg</small></span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-chart-pie"></i> Voir répartition détaillée</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper cyan">
+      <i class="pi pi-chart-bar"></i>
+    </div>
+  </div>
+
+  <!-- 5. Revenus Bagages (Interactif : Ouvre le détail des revenus par palier tarifaire) -->
+  <div
+    class="stat-card interactive"
+    (click)="openRevenueDetailModal()"
+    title="Cliquer pour afficher l'analyse des revenus par tranche tarifaire (30 / 50 / 70 DT)"
+  >
+    <div class="stat-content">
+      <span class="stat-label">Revenus Bagages</span>
+      <span class="stat-value">{{ statistics?.totalRevenue ?? 0 }} <small>DT</small></span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-calculator"></i> Voir détail des revenus</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper purple">
+      <i class="pi pi-wallet"></i>
+    </div>
+  </div>
+
+  <!-- 6. Poids Moyen (Interactif : Ouvre la formule et le calcul détaillé) -->
+  <div
+    class="stat-card interactive"
+    (click)="openAverageWeightDetailModal()"
+    title="Cliquer pour afficher la formule mathématique et le calcul du poids moyen"
+  >
+    <div class="stat-content">
+      <span class="stat-label">Poids Moyen</span>
+      <span class="stat-value">{{ statistics?.averageWeight ?? 0 }} <small>kg</small></span>
+      <span class="stat-desc">
+        <span class="card-action-text"><i class="pi pi-info-circle"></i> Formule & détails</span>
+      </span>
+    </div>
+    <div class="stat-icon-wrapper indigo">
+      <i class="pi pi-sliders-h"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Table Card (Sakai PrimeNG DataView) -->
+<div class="card">
+  <!-- Barre d'outils de la table -->
+  <div class="table-toolbar">
+    <div class="search-box">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        class="input-control search-input"
+        placeholder="Rechercher par ID, réservation, type..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+      <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''; onSearchChange()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-controls-row">
+      <!-- Filtres Statut (Pills) -->
+      <div class="filter-group">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="selectedStatutFilter === 'ALL'"
+          (click)="onStatutFilterChange('ALL')"
+        >
+          Tous ({{ bagages.length }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="selectedStatutFilter === 'REGISTER'"
+          (click)="onStatutFilterChange('REGISTER')"
+        >
+          <span class="dot green"></span> Enregistrés ({{ registeredCount }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="selectedStatutFilter === 'PENDING'"
+          (click)="onStatutFilterChange('PENDING')"
+        >
+          <span class="dot amber"></span> En attente ({{ pendingCount }})
+        </button>
+      </div>
+
+      <!-- Filtre Catégorie Type (Select) -->
+      <div class="type-filter-wrapper">
+        <select
+          class="input-control select-type-control"
+          [(ngModel)]="selectedTypeFilter"
+          (change)="onTypeFilterChange($any($event.target).value)"
+        >
+          <option value="ALL">Tous les types</option>
+          <option value="CABIN">Cabine (0–10 kg)</option>
+          <option value="MEDIUM">Soute moyen (10–20 kg)</option>
+          <option value="LARGE">Grand soute (20–30 kg)</option>
+          <option value="SPECIAL">Voyage / Spécial</option>
+        </select>
+      </div>
+
+      <!-- Réinitialisation des filtres actifs -->
+      <button
+        *ngIf="searchTerm || selectedStatutFilter !== 'ALL' || selectedTypeFilter !== 'ALL' || sortColumn"
+        type="button"
+        class="btn btn-outline btn-reset-filters"
+        (click)="resetAllFilters()"
+        title="Réinitialiser la recherche, les filtres et le tri"
+      >
+        <i class="pi pi-filter-slash"></i>
+        <span>Réinitialiser</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading" class="loading-state">
+    <i class="pi pi-spin pi-spinner spinner"></i>
+    <p>Chargement des bagages depuis Redis via la Gateway...</p>
+  </div>
+
+  <!-- Tableau des données -->
+  <div *ngIf="!loading" class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="sortable-th" (click)="setSort('id')" title="Cliquer pour trier par ID">
+            <div class="th-content">
+              <span>Identifiant (UUID)</span>
+              <i class="pi" [ngClass]="sortColumn === 'id' ? (sortDirection === 'asc' ? 'pi-sort-amount-up-alt active' : 'pi-sort-amount-down active') : 'pi-sort-alt'"></i>
+            </div>
+          </th>
+          <th class="sortable-th" (click)="setSort('reservationId')" title="Cliquer pour trier par N° de Réservation">
+            <div class="th-content">
+              <span>N° Réservation</span>
+              <i class="pi" [ngClass]="sortColumn === 'reservationId' ? (sortDirection === 'asc' ? 'pi-sort-amount-up-alt active' : 'pi-sort-amount-down active') : 'pi-sort-alt'"></i>
+            </div>
+          </th>
+          <th>Type de bagage</th>
+          <th class="sortable-th" (click)="setSort('poids')" title="Cliquer pour trier par Poids">
+            <div class="th-content">
+              <span>Poids (kg)</span>
+              <i class="pi" [ngClass]="sortColumn === 'poids' ? (sortDirection === 'asc' ? 'pi-sort-amount-up-alt active' : 'pi-sort-amount-down active') : 'pi-sort-alt'"></i>
+            </div>
+          </th>
+          <th class="sortable-th" (click)="setSort('statut')" title="Cliquer pour trier par Statut">
+            <div class="th-content">
+              <span>Statut</span>
+              <i class="pi" [ngClass]="sortColumn === 'statut' ? (sortDirection === 'asc' ? 'pi-sort-amount-up-alt active' : 'pi-sort-amount-down active') : 'pi-sort-alt'"></i>
+            </div>
+          </th>
+          <th class="sortable-th" (click)="setSort('prix')" title="Cliquer pour trier par Prix">
+            <div class="th-content">
+              <span>Prix (DT)</span>
+              <i class="pi" [ngClass]="sortColumn === 'prix' ? (sortDirection === 'asc' ? 'pi-sort-amount-up-alt active' : 'pi-sort-amount-down active') : 'pi-sort-alt'"></i>
+            </div>
+          </th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of filteredBagages">
+          <td>
+            <div class="id-cell" [title]="b.id">
+              <span class="id-short">{{ b.id.substring(0, 8) }}...</span>
+              <button class="btn-copy" (click)="openDetailModal(b)" title="Voir détails">
+                <i class="pi pi-external-link"></i>
+              </button>
+            </div>
+          </td>
+          <td>
+            <span *ngIf="b.reservationId" class="reservation-badge">
+              <i class="pi pi-ticket"></i> {{ b.reservationId }}
+            </span>
+            <span *ngIf="!b.reservationId" class="text-muted">
+              Non rattaché
+            </span>
+          </td>
+          <td>
+            <div class="type-cell">
+              <i class="pi pi-box type-icon"></i>
+              <span>{{ b.type }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="weight-cell">
+              <span class="weight-val" [ngClass]="getWeightBadgeClass(b.poids)">
+                {{ b.poids }} kg
+              </span>
+              <div class="weight-bar-bg" title="{{ b.poids }} kg / 30 kg max">
+                <div class="weight-bar-fill" [style.width.%]="getWeightProgressPercent(b.poids)"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="tag" [ngClass]="getStatutTagClass(b.statut)">
+              {{ b.statut }}
+            </span>
+          </td>
+          <td>
+            <span class="price-val">
+              {{ b.prix != null ? (b.prix + ' DT') : '—' }}
+            </span>
+          </td>
+          <td class="text-right">
+            <div class="action-buttons">
+              <button type="button" class="btn-icon" (click)="openDetailModal(b)" title="Consulter la fiche bagage">
+                <i class="pi pi-eye"></i>
+              </button>
+              <button type="button" class="btn-icon" (click)="openEditModal(b)" title="Modifier les informations">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button type="button" class="btn-icon link" (click)="openAssociateModal(b)" title="Associer à un dossier réservation">
+                <i class="pi pi-link"></i>
+              </button>
+              <button type="button" class="btn-icon delete" (click)="openDeleteModal(b)" title="Supprimer ce bagage">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Liste vide -->
+        <tr *ngIf="filteredBagages.length === 0">
+          <td colspan="7" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-inbox empty-icon"></i>
+              <h4>Aucun bagage trouvé</h4>
+              <p *ngIf="searchTerm">Aucun résultat ne correspond à « {{ searchTerm }} ».</p>
+              <p *ngIf="!searchTerm">Commencez par ajouter votre premier bagage pour alimenter Redis.</p>
+              <button class="btn btn-primary" (click)="openCreateModal()">
+                <i class="pi pi-plus"></i> Créer un bagage
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Barre d'information & pagination en bas du tableau -->
+    <div class="table-footer-bar">
+      <span>
+        Affichage de <strong>{{ filteredBagages.length }}</strong> sur <strong>{{ bagages.length }}</strong> bagage(s) enregistré(s)
+      </span>
+      <span *ngIf="sortColumn" class="active-sort-indicator">
+        <i class="pi pi-sort"></i>
+        Trié par <strong>{{ sortColumn }}</strong> ({{ sortDirection === 'asc' ? 'croissant' : 'décroissant' }})
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : AJOUT / MODIFICATION D'UN BAGAGE                       -->
+<!-- ============================================================== -->
+<div *ngIf="showFormModal" class="modal-backdrop" (click)="closeFormModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi" [ngClass]="isEditMode ? 'pi-pencil' : 'pi-plus-circle'"></i>
+        {{ isEditMode ? 'Modifier le Bagage' : 'Enregistrer un Nouveau Bagage' }}
+      </h3>
+      <button type="button" class="modal-close" (click)="closeFormModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="bagageForm" (ngSubmit)="saveBagage()">
+      <div class="modal-body">
+        <!-- Message d'erreur de validation retourné par le Backend -->
+        <div *ngIf="formError" class="modal-alert-error">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ formError }}</span>
+        </div>
+
+        <!-- N° Réservation -->
+        <div class="form-group">
+          <label for="reservationId">N° de Réservation *</label>
+          <input
+            id="reservationId"
+            type="text"
+            class="input-control"
+            placeholder="Ex : RES-101, RES-999..."
+            formControlName="reservationId"
+            [class.invalid]="bagageForm.get('reservationId')?.invalid && bagageForm.get('reservationId')?.touched"
+          />
+          <div *ngIf="bagageForm.get('reservationId')?.invalid && bagageForm.get('reservationId')?.touched" class="form-error">
+            <i class="pi pi-exclamation-circle"></i> Le numéro de réservation est obligatoire.
+          </div>
+        </div>
+
+        <!-- Type de Bagage -->
+        <div class="form-group">
+          <label for="type">Type de bagage *</label>
+          <select
+            id="type"
+            class="input-control"
+            formControlName="type"
+            (change)="onTypeChange()"
+            [class.invalid]="bagageForm.get('type')?.invalid && bagageForm.get('type')?.touched"
+          >
+            <option *ngFor="let opt of baggageTypes" [value]="opt">{{ opt }}</option>
+          </select>
+          <div *ngIf="bagageForm.get('type')?.invalid && bagageForm.get('type')?.touched" class="form-error">
+            <i class="pi pi-exclamation-circle"></i> Le type de bagage est obligatoire.
+          </div>
+        </div>
+
+        <!-- Poids du Bagage (kg) -->
+        <div class="form-group">
+          <label for="poids">Poids du bagage (kg) *</label>
+          <div class="input-with-suffix">
+            <input
+              id="poids"
+              type="number"
+              step="0.5"
+              min="0.1"
+              max="30.0"
+              class="input-control"
+              placeholder="Ex : 12.5"
+              formControlName="poids"
+              [class.invalid]="(bagageForm.get('poids')?.invalid || bagageForm.errors?.['categoryWeightMismatch']) && bagageForm.get('poids')?.touched"
+            />
+            <span class="suffix">kg</span>
+          </div>
+
+          <!-- Règle tarifaire Backend calculée en direct -->
+          <div *ngIf="estimatedPrice !== null && !bagageForm.errors?.['categoryWeightMismatch']" class="price-preview-banner">
+            <div class="preview-info">
+              <span class="preview-label">Prix calculé par le Backend :</span>
+              <span class="preview-amount">{{ estimatedPrice }} DT</span>
+            </div>
+            <small class="preview-rule">
+              <i class="pi pi-info-circle"></i>
+              {{ bagageForm.get('poids')?.value <= 10 ? 'Palier 0–10 kg : 30 DT' : (bagageForm.get('poids')?.value <= 20 ? 'Palier 10–20 kg : 50 DT' : 'Palier 20–30 kg : 70 DT') }}
+            </small>
+          </div>
+
+          <!-- Erreur de cohérence Type vs Poids -->
+          <div *ngIf="bagageForm.errors?.['categoryWeightMismatch']" class="form-error">
+            <i class="pi pi-exclamation-triangle"></i> {{ bagageForm.errors?.['categoryWeightMismatch'] }}
+          </div>
+
+          <div *ngIf="bagageForm.get('poids')?.hasError('required') && bagageForm.get('poids')?.touched" class="form-error">
+            <i class="pi pi-exclamation-circle"></i> Le poids est obligatoire.
+          </div>
+          <div *ngIf="bagageForm.get('poids')?.hasError('min') && bagageForm.get('poids')?.touched" class="form-error">
+            <i class="pi pi-exclamation-circle"></i> Le poids doit être supérieur à 0 kg.
+          </div>
+          <div *ngIf="bagageForm.get('poids')?.hasError('max')" class="form-error">
+            <i class="pi pi-exclamation-triangle"></i> Rejeté : le poids dépasse la limite maximale autorisée de 30.0 kg.
+          </div>
+        </div>
+
+        <!-- Statut -->
+        <div class="form-group">
+          <label for="statut">Statut du bagage *</label>
+          <select id="statut" class="input-control" formControlName="statut">
+            <option value="REGISTERED">ENREGISTRÉ (Validé)</option>
+            <option value="PENDING">EN ATTENTE (À peser au comptoir)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeFormModal()">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="bagageForm.invalid || submitting">
+          <i class="pi" [ngClass]="submitting ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+          <span>{{ isEditMode ? 'Enregistrer les modifications' : (submitting ? 'Validation en cours...' : 'Valider le bagage') }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : DÉTAILS D'UN BAGAGE (Étiquette Aéroport)               -->
+<!-- ============================================================== -->
+<div *ngIf="showDetailModal && selectedBagage" class="modal-backdrop" (click)="showDetailModal = false">
+  <div class="modal-dialog luggage-tag-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi pi-id-card"></i> Fiche Bagage Aéroport
+      </h3>
+      <button class="modal-close" (click)="showDetailModal = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Tag visuel inspiré étiquette aéroport -->
+      <div class="luggage-tag-card">
+        <div class="tag-top">
+          <div class="airline-brand">✈️ SKYVOYAGE BAGGAGE</div>
+          <span class="tag" [ngClass]="getStatutTagClass(selectedBagage.statut)">
+            {{ selectedBagage.statut }}
+          </span>
+        </div>
+
+        <div class="tag-body">
+          <div class="tag-row main-ref">
+            <span class="tag-lbl">RÉSERVATION</span>
+            <span class="tag-val-large">{{ selectedBagage.reservationId || 'SANS RÉSERVATION' }}</span>
+          </div>
+
+          <div class="tag-grid-2">
+            <div>
+              <span class="tag-lbl">POIDS PESÉ</span>
+              <span class="tag-val-bold text-primary">{{ selectedBagage.poids }} kg</span>
+            </div>
+            <div>
+              <span class="tag-lbl">TARIF APPLIQUÉ</span>
+              <span class="tag-val-bold text-success">{{ selectedBagage.prix }} DT</span>
+            </div>
+          </div>
+
+          <div class="tag-row">
+            <span class="tag-lbl">CATÉGORIE / TYPE</span>
+            <span class="tag-val">{{ selectedBagage.type }}</span>
+          </div>
+
+          <div class="tag-row">
+            <span class="tag-lbl">IDENTIFIANT UNIQUE (REDIS UUID)</span>
+            <code class="tag-uuid">{{ selectedBagage.id }}</code>
+          </div>
+
+          <!-- Code barres stylisé -->
+          <div class="barcode-container">
+            <div class="barcode-lines"></div>
+            <span class="barcode-text">* {{ selectedBagage.id.substring(0, 18).toUpperCase() }} *</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeDetailModal()">Fermer</button>
+      <button type="button" class="btn btn-outline" (click)="openAssociateFromDetail()">
+        <i class="pi pi-link"></i> Associer réservation
+      </button>
+      <button type="button" class="btn btn-primary" (click)="closeDetailModal(); openEditModal(selectedBagage)">
+        <i class="pi pi-pencil"></i> Modifier ce bagage
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : ASSOCIER À UNE RÉSERVATION                             -->
+<!-- ============================================================== -->
+<div *ngIf="showAssociateModal && bagageToAssociate" class="modal-backdrop" (click)="closeAssociateModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="pi pi-link"></i> Associer à une réservation</h3>
+      <button type="button" class="modal-close" (click)="closeAssociateModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Alerte d'erreur éventuelle -->
+      <div *ngIf="associateError" class="modal-alert-error">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ associateError }}</span>
+      </div>
+
+      <!-- Résumé du bagage sélectionné -->
+      <div class="associate-meta-box mb-3">
+        <span class="meta-badge"><i class="pi pi-box"></i> {{ bagageToAssociate.type }}</span>
+        <span class="meta-badge"><i class="pi pi-sliders-h"></i> {{ bagageToAssociate.poids }} kg</span>
+        <span class="meta-badge"><i class="pi pi-wallet"></i> {{ bagageToAssociate.prix }} DT</span>
+      </div>
+
+      <!-- Champ 1 : ID du Bagage (Lecture seule) -->
+      <div class="form-group">
+        <label for="assocBagageId">ID du Bagage (Clé Redis)</label>
+        <input
+          id="assocBagageId"
+          type="text"
+          class="input-control bg-readonly"
+          [value]="bagageToAssociate.id"
+          readonly
+        />
+        <small class="form-hint">Identifiant unique immutable du bagage dans le microservice.</small>
+      </div>
+
+      <!-- Champ 2 : ID de Réservation (Éditable) -->
+      <div class="form-group">
+        <label for="assocResId">ID de Réservation *</label>
+        <input
+          id="assocResId"
+          type="text"
+          class="input-control"
+          placeholder="Ex : RES-101, RES-405, RES-999..."
+          [(ngModel)]="targetReservationId"
+          (keydown.enter)="confirmAssociation()"
+        />
+        <small class="form-hint">Le rattachement au dossier voyageur sera transmis en temps réel via l'endpoint <code>PATCH /api/bagages/&#123;id&#125;/reservation/&#123;reservationId&#125;</code>.</small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeAssociateModal()">Annuler</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="confirmAssociation()"
+        [disabled]="!targetReservationId.trim() || associating"
+      >
+        <i class="pi" [ngClass]="associating ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+        <span>{{ associating ? 'Association en cours...' : 'Valider l\'association' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : CONFIRMATION DE SUPPRESSION                            -->
+<!-- ============================================================== -->
+<div *ngIf="showDeleteModal && bagageToDelete" class="modal-backdrop" (click)="closeDeleteModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="text-danger"><i class="pi pi-exclamation-triangle"></i> Confirmation de suppression</h3>
+      <button type="button" class="modal-close" (click)="closeDeleteModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>
+        Êtes-vous sûr de vouloir supprimer définitivement le bagage :
+      </p>
+      <div class="delete-summary-card">
+        <div><strong>ID :</strong> <code>{{ bagageToDelete.id }}</code></div>
+        <div><strong>Type :</strong> {{ bagageToDelete.type }} ({{ bagageToDelete.poids }} kg)</div>
+        <div><strong>Réservation :</strong> {{ bagageToDelete.reservationId || 'Non assigné' }}</div>
+      </div>
+      <p class="text-danger-sm mt-2">
+        Cette opération effacera la clé correspondante dans la base de données Redis.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Annuler</button>
+      <button type="button" class="btn btn-danger" (click)="confirmDelete()">
+        <i class="pi pi-trash"></i> Confirmer la suppression
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : DÉTAIL DU POIDS TOTAL CUMULÉ                          -->
+<!-- ============================================================== -->
+<div *ngIf="showWeightDetailModal" class="modal-backdrop" (click)="closeWeightDetailModal()">
+  <div class="modal-dialog analytics-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi pi-compass text-primary"></i> Détail du Poids Total Cumulé
+      </h3>
+      <button type="button" class="modal-close" (click)="closeWeightDetailModal()" aria-label="Fermer">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- KPIs Résumé -->
+      <div class="analytics-kpi-grid">
+        <div class="kpi-card highlight-primary">
+          <span class="kpi-label">Poids total cumulé</span>
+          <span class="kpi-value">{{ weightBreakdown.totalWeight }} <small>kg</small></span>
+          <span class="kpi-sub">Charge totale enregistrée</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Bagages pesés</span>
+          <span class="kpi-value">{{ weightBreakdown.count }}</span>
+          <span class="kpi-sub">Unité(s) enregistrée(s)</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Capacité max théorique</span>
+          <span class="kpi-value">{{ weightBreakdown.count * 30 }} <small>kg</small></span>
+          <span class="kpi-sub">Plafond 30 kg / bagage</span>
+        </div>
+      </div>
+
+      <!-- Répartition par tranche de poids -->
+      <div class="analytics-section">
+        <h4 class="section-title"><i class="pi pi-chart-pie"></i> Répartition par catégorie de poids</h4>
+        <div class="distribution-bars">
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-cabin">0–10 kg (Cabine / Léger)</span>
+              <span class="dist-numbers"><strong>{{ weightBreakdown.cabin.count }}</strong> bagage(s) &bull; {{ weightBreakdown.cabin.weight }} kg ({{ weightBreakdown.cabin.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-cabin" [style.width.%]="weightBreakdown.cabin.pct"></div>
+            </div>
+          </div>
+
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-medium">10–20 kg (Soute Standard)</span>
+              <span class="dist-numbers"><strong>{{ weightBreakdown.medium.count }}</strong> bagage(s) &bull; {{ weightBreakdown.medium.weight }} kg ({{ weightBreakdown.medium.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-medium" [style.width.%]="weightBreakdown.medium.pct"></div>
+            </div>
+          </div>
+
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-large">20–30 kg (Soute Lourd)</span>
+              <span class="dist-numbers"><strong>{{ weightBreakdown.large.count }}</strong> bagage(s) &bull; {{ weightBreakdown.large.weight }} kg ({{ weightBreakdown.large.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-large" [style.width.%]="weightBreakdown.large.pct"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste détaillée des bagages pesés -->
+      <div class="analytics-section">
+        <h4 class="section-title"><i class="pi pi-list"></i> Poids individuel par bagage</h4>
+        <div class="analytics-table-wrapper" *ngIf="weightBreakdown.items.length > 0; else noBagagesWeight">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>ID Bagage</th>
+                <th>Réservation</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th class="text-right">Poids pesé</th>
+                <th class="text-right">% de la limite max (30 kg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of weightBreakdown.items">
+                <td><code class="uuid-compact">{{ item.id.substring(0, 8) }}...</code></td>
+                <td>
+                  <span *ngIf="item.reservationId" class="badge-res">{{ item.reservationId }}</span>
+                  <span *ngIf="!item.reservationId" class="text-muted-italic">Non rattaché</span>
+                </td>
+                <td>{{ item.type }}</td>
+                <td>
+                  <span class="tag-sm" [ngClass]="getStatutTagClass(item.statut)">{{ item.statut }}</span>
+                </td>
+                <td class="text-right font-weight-bold">{{ item.poids }} kg</td>
+                <td class="text-right">
+                  <div class="cell-progress">
+                    <div class="progress-bar-fill" [style.width.%]="item.pctOfMax"></div>
+                    <span class="pct-label">{{ item.pctOfMax }}%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noBagagesWeight>
+          <div class="empty-detail-state">
+            <i class="pi pi-inbox"></i>
+            <p>Aucun bagage enregistré pour le moment.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeWeightDetailModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : DÉTAIL DES REVENUS BAGAGES                            -->
+<!-- ============================================================== -->
+<div *ngIf="showRevenueDetailModal" class="modal-backdrop" (click)="closeRevenueDetailModal()">
+  <div class="modal-dialog analytics-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi pi-wallet text-success"></i> Détail des Revenus Bagages
+      </h3>
+      <button type="button" class="modal-close" (click)="closeRevenueDetailModal()" aria-label="Fermer">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- KPIs Résumé Revenus -->
+      <div class="analytics-kpi-grid">
+        <div class="kpi-card highlight-success">
+          <span class="kpi-label">Revenus totaux calculés</span>
+          <span class="kpi-value">{{ revenueBreakdown.totalRevenue }} <small>DT</small></span>
+          <span class="kpi-sub">Total encaissé Backend</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Bagages facturés</span>
+          <span class="kpi-value">{{ bagages.length }}</span>
+          <span class="kpi-sub">Tarif appliqué en direct</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Moyenne par bagage</span>
+          <span class="kpi-value">{{ revenueBreakdown.averagePerBagage }} <small>DT</small></span>
+          <span class="kpi-sub">Revenu moyen unitaire</span>
+        </div>
+      </div>
+
+      <!-- Répartition par Palier Tarifaire Backend -->
+      <div class="analytics-section">
+        <h4 class="section-title"><i class="pi pi-chart-bar"></i> Répartition par palier tarifaire Backend</h4>
+        <div class="distribution-bars">
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-price-30">Palier 30 DT (0–10 kg)</span>
+              <span class="dist-numbers"><strong>{{ revenueBreakdown.tier30.count }}</strong> bagage(s) &bull; {{ revenueBreakdown.tier30.revenue }} DT ({{ revenueBreakdown.tier30.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-tier-30" [style.width.%]="revenueBreakdown.tier30.pct"></div>
+            </div>
+          </div>
+
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-price-50">Palier 50 DT (10–20 kg)</span>
+              <span class="dist-numbers"><strong>{{ revenueBreakdown.tier50.count }}</strong> bagage(s) &bull; {{ revenueBreakdown.tier50.revenue }} DT ({{ revenueBreakdown.tier50.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-tier-50" [style.width.%]="revenueBreakdown.tier50.pct"></div>
+            </div>
+          </div>
+
+          <div class="dist-item">
+            <div class="dist-header">
+              <span class="dist-tag tag-price-70">Palier 70 DT (20–30 kg)</span>
+              <span class="dist-numbers"><strong>{{ revenueBreakdown.tier70.count }}</strong> bagage(s) &bull; {{ revenueBreakdown.tier70.revenue }} DT ({{ revenueBreakdown.tier70.pct }}%)</span>
+            </div>
+            <div class="dist-progress-track">
+              <div class="dist-progress-bar bg-tier-70" [style.width.%]="revenueBreakdown.tier70.pct"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Détail des prix réels par bagage -->
+      <div class="analytics-section">
+        <h4 class="section-title"><i class="pi pi-receipt"></i> Tarification unitaire réelle</h4>
+        <div class="analytics-table-wrapper" *ngIf="revenueBreakdown.items.length > 0; else noBagagesRevenue">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>ID Bagage</th>
+                <th>Réservation</th>
+                <th>Type</th>
+                <th>Poids</th>
+                <th>Règle tarifaire</th>
+                <th class="text-right">Prix réel</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of revenueBreakdown.items">
+                <td><code class="uuid-compact">{{ item.id.substring(0, 8) }}...</code></td>
+                <td>
+                  <span *ngIf="item.reservationId" class="badge-res">{{ item.reservationId }}</span>
+                  <span *ngIf="!item.reservationId" class="text-muted-italic">Non rattaché</span>
+                </td>
+                <td>{{ item.type }}</td>
+                <td>{{ item.poids }} kg</td>
+                <td><span class="tier-badge">{{ item.tier }}</span></td>
+                <td class="text-right font-weight-bold text-success">{{ item.prix }} DT</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noBagagesRevenue>
+          <div class="empty-detail-state">
+            <i class="pi pi-inbox"></i>
+            <p>Aucun bagage enregistré pour le moment.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeRevenueDetailModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : DÉTAIL ET CALCUL DU POIDS MOYEN                       -->
+<!-- ============================================================== -->
+<div *ngIf="showAverageWeightDetailModal" class="modal-backdrop" (click)="closeAverageWeightDetailModal()">
+  <div class="modal-dialog analytics-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi pi-chart-line text-info"></i> Détail et Calcul du Poids Moyen
+      </h3>
+      <button type="button" class="modal-close" (click)="closeAverageWeightDetailModal()" aria-label="Fermer">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Carte explicative de la formule -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <i class="pi pi-calculator"></i> Formule mathématique de calcul
+        </div>
+        <div class="formula-math">
+          <div class="math-fraction">
+            <div class="math-numerator">Poids Total Cumulé</div>
+            <div class="math-denominator">Nombre Total de Bagages</div>
+          </div>
+          <span class="math-equals">=</span>
+          <div class="math-fraction">
+            <div class="math-numerator">{{ averageWeightDetails.totalWeight }} kg</div>
+            <div class="math-denominator">{{ averageWeightDetails.count }} bagages</div>
+          </div>
+          <span class="math-equals">=</span>
+          <span class="math-result">{{ averageWeightDetails.average }} kg / bagage</span>
+        </div>
+        <p class="formula-note">
+          <i class="pi pi-info-circle"></i>
+          Calculé de façon dynamique à partir des {{ averageWeightDetails.count }} bagages stockés dans Redis et servis par le microservice.
+        </p>
+      </div>
+
+      <!-- KPIs Poids Moyen & Métriques clés -->
+      <div class="analytics-kpi-grid">
+        <div class="kpi-card highlight-info">
+          <span class="kpi-label">Poids moyen calculé</span>
+          <span class="kpi-value">{{ averageWeightDetails.average }} <small>kg</small></span>
+          <span class="kpi-sub">Moyenne par bagage</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Poids minimum pesé</span>
+          <span class="kpi-value">{{ averageWeightDetails.minWeight }} <small>kg</small></span>
+          <span class="kpi-sub">Bagage le plus léger</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Poids maximum pesé</span>
+          <span class="kpi-value">{{ averageWeightDetails.maxWeight }} <small>kg</small></span>
+          <span class="kpi-sub">Bagage le plus lourd</span>
+        </div>
+      </div>
+
+      <!-- Jauge de sécurité par rapport à la limite de 30 kg -->
+      <div class="analytics-section">
+        <h4 class="section-title"><i class="pi pi-shield"></i> Positionnement par rapport à la limite max autorisée (30.0 kg)</h4>
+        <div class="gauge-container">
+          <div class="gauge-info">
+            <span>Poids moyen : <strong>{{ averageWeightDetails.average }} kg</strong></span>
+            <span>Marge de sécurité restante : <strong class="text-success">+{{ averageWeightDetails.marginToMax }} kg</strong></span>
+          </div>
+          <div class="gauge-track">
+            <div
+              class="gauge-bar"
+              [style.width.%]="(averageWeightDetails.average / 30.0) * 100"
+              [ngClass]="averageWeightDetails.average > 25 ? 'bg-danger' : (averageWeightDetails.average > 18 ? 'bg-warning' : 'bg-success')"
+            ></div>
+          </div>
+          <div class="gauge-scale">
+            <span>0 kg</span>
+            <span>10 kg (Cabine)</span>
+            <span>20 kg (Standard)</span>
+            <span>30 kg (Max autorisé)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeAverageWeightDetailModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL : HISTORIQUE DES OPÉRATIONS (SESSION)                    -->
+<!-- ============================================================== -->
+<div *ngIf="showHistoryModal" class="modal-backdrop" (click)="closeHistoryModal()">
+  <div class="modal-dialog analytics-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="pi pi-history text-primary"></i> Journal des Opérations de Session
+      </h3>
+      <button type="button" class="modal-close" (click)="closeHistoryModal()" aria-label="Fermer">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Encadré explicatif Architecture Backend & Audit -->
+      <div class="history-architecture-banner">
+        <i class="pi pi-info-circle banner-info-icon"></i>
+        <div class="banner-text">
+          <strong>Traçabilité des opérations en direct :</strong>
+          <p>
+            Ce journal trace en temps réel chaque opération (ajout, mise à jour, rattachement réservation, suppression)
+            exécutée avec succès via l'API Gateway.
+          </p>
+          <small class="text-muted">
+            Note d'architecture : Le microservice Backend persiste les entités directement dans Redis (<code>@RedisHash("Bagage")</code>)
+            sans table d'historique permanente. Une implémentation d'audit serveur dédiée (via Redis Streams ou table SQL d'audit)
+            pourra être branchée indépendamment selon les besoins du projet.
+          </small>
+        </div>
+      </div>
+
+      <!-- Table de l'historique -->
+      <div class="analytics-section">
+        <div class="analytics-table-wrapper" *ngIf="operationsHistory.length > 0; else noHistory">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Opération</th>
+                <th>ID Bagage</th>
+                <th>Détails & Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let op of operationsHistory">
+                <td class="text-muted font-monospace">
+                  {{ op.timestamp | date:'HH:mm:ss' }}
+                </td>
+                <td>
+                  <span class="tag-sm" [ngClass]="op.badgeClass">{{ op.action }}</span>
+                </td>
+                <td>
+                  <code class="uuid-compact">{{ op.bagageId.substring(0, 8) }}...</code>
+                </td>
+                <td class="text-sm">
+                  {{ op.details }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noHistory>
+          <div class="empty-detail-state">
+            <i class="pi pi-history"></i>
+            <p>Aucune opération effectuée pour le moment durant cette session.</p>
+            <small>Les actions d'ajout, de modification, d'association et de suppression s'afficheront ici en direct.</small>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-outline"
+        (click)="clearHistory()"
+        [disabled]="operationsHistory.length === 0"
+      >
+        <i class="pi pi-trash"></i> Vider l'historique
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="closeHistoryModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>

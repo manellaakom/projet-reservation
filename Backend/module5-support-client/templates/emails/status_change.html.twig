@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Changement de statut</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+    <h1 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+        Support Client
+    </h1>
+
+    <p>Bonjour,</p>
+
+    <p>Votre demande de support <strong>#{{ supportRequest.id }}</strong> a changé de statut.</p>
+
+    <table style="background: #f8f9fa; padding: 15px; border-radius: 5px; width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 8px;"><strong>Sujet :</strong></td>
+            <td style="padding: 8px;">{{ supportRequest.sujet }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px;"><strong>Ancien statut :</strong></td>
+            <td style="padding: 8px;">{{ oldStatus }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px;"><strong>Nouveau statut :</strong></td>
+            <td style="padding: 8px;">
+                <span style="color: #27ae60; font-weight: bold;">
+                    {{ newStatusLabel|default('Inconnu') }}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px;"><strong>Date de la demande :</strong></td>
+            <td style="padding: 8px;">{{ supportRequest.dateCreation|date('d/m/Y H:i') }}</td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 20px;">
+        Vous pouvez consulter votre demande sur notre plateforme pour plus de détails.
+    </p>
+
+    <p>Cordialement,<br>L'équipe Support</p>
+
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+    <p style="font-size: 12px; color: #999;">
+        Cet email est automatique, merci de ne pas y répondre.
+    </p>
+</body>
+</html>

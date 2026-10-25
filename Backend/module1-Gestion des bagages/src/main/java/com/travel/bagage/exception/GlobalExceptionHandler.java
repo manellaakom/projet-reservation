@@ -16,14 +16,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage());
+        response.put("error", ex.getMessage() != null ? ex.getMessage() : "Ressource introuvable");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    @ExceptionHandler(BaggageWeightExceededException.class)
-    public ResponseEntity<Map<String, String>> handleBaggageWeightExceeded(BaggageWeightExceededException ex) {
+    @ExceptionHandler({BaggageWeightExceededException.class, BagageWeightExceededException.class})
+    public ResponseEntity<Map<String, String>> handleBaggageWeightExceeded(RuntimeException ex) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage());
+        response.put("error", ex.getMessage() != null ? ex.getMessage() : "Poids maximal dépassé");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
@@ -31,9 +31,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
+            String fieldName = (error instanceof FieldError fieldError) ? fieldError.getField() : error.getObjectName();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            errors.put(fieldName, errorMessage != null ? errorMessage : "Valeur invalide");
         });
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralExceptions(Exception ex) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage());
+        response.put("error", ex.getMessage() != null ? ex.getMessage() : "Une erreur inattendue est survenue.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

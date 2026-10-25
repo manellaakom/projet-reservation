@@ -1,0 +1,73 @@
+<div class="layout-wrapper">
+  <!-- Topbar Sakai -->
+  <header class="layout-topbar">
+    <a routerLink="/" class="topbar-brand">
+      <div class="brand-icon">
+        <i class="pi pi-compass"></i>
+      </div>
+      <div>
+        <span class="brand-name">SkyVoyage</span>
+        <span class="brand-badge">Module Bagages</span>
+      </div>
+    </a>
+
+    <div class="topbar-actions">
+      <div class="backend-pill" title="Toutes les requêtes passent par l'API Gateway">
+        <span class="dot"></span>
+        <span>Gateway : 8080</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container avec Sidebar et Main Content -->
+  <div class="layout-container">
+    <!-- Sidebar Sakai -->
+    <aside class="layout-sidebar">
+      <div>
+        <div class="sidebar-section-title">Navigation Principale</div>
+        <ul class="sidebar-menu">
+          <li>
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="menu-item">
+              <i class="pi pi-home"></i>
+              <span>Accueil</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/bagages" routerLinkActive="active" class="menu-item">
+              <i class="pi pi-briefcase"></i>
+              <span>Gestion des bagages</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">Liens Microservices</div>
+        <ul class="sidebar-menu">
+          <li>
+            <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer" class="menu-item">
+              <i class="pi pi-file-code"></i>
+              <span>Swagger Gateway (8080)</span>
+            </a>
+          </li>
+          <li>
+            <a href="http://localhost:8761" target="_blank" rel="noopener noreferrer" class="menu-item">
+              <i class="pi pi-server"></i>
+              <span>Tableau Eureka (8761)</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-info-card">
+        <h4>Module 1</h4>
+        <p>Spring Boot • Spring Cloud Eureka • Redis Hash • Gateway Netty</p>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="layout-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
