@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "voyages")
@@ -102,9 +100,6 @@ public class Voyage {
     @Column(nullable = false, length = 30)
     private StatutOffre statut = StatutOffre.DISPONIBLE;
 
-    @OneToMany(mappedBy = "voyage", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<OffreBillet> billets = new ArrayList<>();
-
     public BigDecimal getPrixEffectif() {
         if (Boolean.TRUE.equals(enPromotion) && prixPromo != null && prixPromo.compareTo(BigDecimal.ZERO) > 0) {
             return prixPromo;
@@ -112,16 +107,10 @@ public class Voyage {
         return prixBase;
     }
 
-    public void addBillet(OffreBillet billet) {
-        billets.add(billet);
-        billet.setVoyage(this);
-    }
-
-
     // --- Constructors ---
     public Voyage() {}
 
-    public Voyage(Long id, String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Integer nombreConsultations, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut, List<OffreBillet> billets) {
+    public Voyage(Long id, String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Integer nombreConsultations, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut) {
         this.id = id;
         this.codeVoyage = codeVoyage;
         this.titre = titre;
@@ -150,7 +139,6 @@ public class Voyage {
         this.wifiDisponible = wifiDisponible;
         this.imageUrl = imageUrl;
         this.statut = statut;
-        this.billets = billets;
     }
 
     // --- Getters & Setters ---
@@ -340,12 +328,6 @@ public class Voyage {
     public void setStatut(StatutOffre statut) {
         this.statut = statut;
     }
-    public List<OffreBillet> getBillets() {
-        return this.billets;
-    }
-    public void setBillets(List<OffreBillet> billets) {
-        this.billets = billets;
-    }
 
     // --- Builder Pattern ---
     public static VoyageBuilder builder() {
@@ -381,7 +363,6 @@ public class Voyage {
         private Boolean wifiDisponible = false;
         private String imageUrl;
         private StatutOffre statut = StatutOffre.DISPONIBLE;
-        private List<OffreBillet> billets = new ArrayList<>();
 
         public VoyageBuilder() {}
 
@@ -497,10 +478,6 @@ public class Voyage {
             this.statut = statut;
             return this;
         }
-        public VoyageBuilder billets(List<OffreBillet> billets) {
-            this.billets = billets;
-            return this;
-        }
 
         public Voyage build() {
             Voyage instance = new Voyage();
@@ -532,10 +509,7 @@ public class Voyage {
             instance.wifiDisponible = this.wifiDisponible;
             instance.imageUrl = this.imageUrl;
             instance.statut = this.statut;
-            instance.billets = this.billets;
             return instance;
         }
     }
-
 }
-

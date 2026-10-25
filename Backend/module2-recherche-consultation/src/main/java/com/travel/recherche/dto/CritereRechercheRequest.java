@@ -1,7 +1,6 @@
 package com.travel.recherche.dto;
 
 import com.travel.recherche.enums.CategorieOffre;
-import com.travel.recherche.enums.ClasseBillet;
 import com.travel.recherche.enums.TypeTransport;
 
 import java.math.BigDecimal;
@@ -16,7 +15,6 @@ public class CritereRechercheRequest {
     private String compagnie;
     private TypeTransport typeTransport;
     private CategorieOffre categorie;
-    private ClasseBillet classeBillet;
     private LocalDate dateDepartMin;
     private LocalDate dateDepartMax;
     private BigDecimal prixMin;
@@ -35,11 +33,10 @@ public class CritereRechercheRequest {
     // Direction : asc, desc
     private String sortDir = "asc";
 
-
     // --- Constructors ---
     public CritereRechercheRequest() {}
 
-    public CritereRechercheRequest(String motCle, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, ClasseBillet classeBillet, LocalDate dateDepartMin, LocalDate dateDepartMax, BigDecimal prixMin, BigDecimal prixMax, Integer dureeMaxMinutes, Boolean volDirectUniquement, Boolean enPromotionUniquement, Boolean bagageSouteInclus, Boolean annulationGratuite, Integer placesMin, Double noteMin, String sortBy, String sortDir) {
+    public CritereRechercheRequest(String motCle, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDate dateDepartMin, LocalDate dateDepartMax, BigDecimal prixMin, BigDecimal prixMax, Integer dureeMaxMinutes, Boolean volDirectUniquement, Boolean enPromotionUniquement, Boolean bagageSouteInclus, Boolean annulationGratuite, Integer placesMin, Double noteMin, String sortBy, String sortDir) {
         this.motCle = motCle;
         this.villeDepart = villeDepart;
         this.villeDestination = villeDestination;
@@ -47,7 +44,6 @@ public class CritereRechercheRequest {
         this.compagnie = compagnie;
         this.typeTransport = typeTransport;
         this.categorie = categorie;
-        this.classeBillet = classeBillet;
         this.dateDepartMin = dateDepartMin;
         this.dateDepartMax = dateDepartMax;
         this.prixMin = prixMin;
@@ -106,12 +102,6 @@ public class CritereRechercheRequest {
     public void setCategorie(CategorieOffre categorie) {
         this.categorie = categorie;
     }
-    public ClasseBillet getClasseBillet() {
-        return this.classeBillet;
-    }
-    public void setClasseBillet(ClasseBillet classeBillet) {
-        this.classeBillet = classeBillet;
-    }
     public LocalDate getDateDepartMin() {
         return this.dateDepartMin;
     }
@@ -145,16 +135,10 @@ public class CritereRechercheRequest {
     public Boolean getVolDirectUniquement() {
         return this.volDirectUniquement;
     }
-    public Boolean isVolDirectUniquement() {
-        return this.volDirectUniquement;
-    }
     public void setVolDirectUniquement(Boolean volDirectUniquement) {
         this.volDirectUniquement = volDirectUniquement;
     }
     public Boolean getEnPromotionUniquement() {
-        return this.enPromotionUniquement;
-    }
-    public Boolean isEnPromotionUniquement() {
         return this.enPromotionUniquement;
     }
     public void setEnPromotionUniquement(Boolean enPromotionUniquement) {
@@ -163,16 +147,10 @@ public class CritereRechercheRequest {
     public Boolean getBagageSouteInclus() {
         return this.bagageSouteInclus;
     }
-    public Boolean isBagageSouteInclus() {
-        return this.bagageSouteInclus;
-    }
     public void setBagageSouteInclus(Boolean bagageSouteInclus) {
         this.bagageSouteInclus = bagageSouteInclus;
     }
     public Boolean getAnnulationGratuite() {
-        return this.annulationGratuite;
-    }
-    public Boolean isAnnulationGratuite() {
         return this.annulationGratuite;
     }
     public void setAnnulationGratuite(Boolean annulationGratuite) {
@@ -216,7 +194,6 @@ public class CritereRechercheRequest {
         private String compagnie;
         private TypeTransport typeTransport;
         private CategorieOffre categorie;
-        private ClasseBillet classeBillet;
         private LocalDate dateDepartMin;
         private LocalDate dateDepartMax;
         private BigDecimal prixMin;
@@ -259,10 +236,6 @@ public class CritereRechercheRequest {
         }
         public CritereRechercheRequestBuilder categorie(CategorieOffre categorie) {
             this.categorie = categorie;
-            return this;
-        }
-        public CritereRechercheRequestBuilder classeBillet(ClasseBillet classeBillet) {
-            this.classeBillet = classeBillet;
             return this;
         }
         public CritereRechercheRequestBuilder dateDepartMin(LocalDate dateDepartMin) {
@@ -327,7 +300,6 @@ public class CritereRechercheRequest {
             instance.compagnie = this.compagnie;
             instance.typeTransport = this.typeTransport;
             instance.categorie = this.categorie;
-            instance.classeBillet = this.classeBillet;
             instance.dateDepartMin = this.dateDepartMin;
             instance.dateDepartMax = this.dateDepartMax;
             instance.prixMin = this.prixMin;
@@ -344,6 +316,4 @@ public class CritereRechercheRequest {
             return instance;
         }
     }
-
 }
-

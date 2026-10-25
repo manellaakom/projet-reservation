@@ -2,7 +2,6 @@ package com.travel.recherche.controller;
 
 import com.travel.recherche.dto.*;
 import com.travel.recherche.enums.CategorieOffre;
-import com.travel.recherche.enums.ClasseBillet;
 import com.travel.recherche.enums.TypeTransport;
 import com.travel.recherche.service.RechercheConsultationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +19,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recherche")
-@Tag(name = "Module 2 — Recherche & Consultation", description = "Recherche de voyages et billets, filtrage, tri, consultation, comparaison d'offres et suggestions intelligentes")
+@Tag(name = "Module 2 — Gestion & Recherche des Voyages", description = "Microservice de gestion unique de l'entité Voyage : CRUD complet, recherche multi-critères, filtres, tri et suggestions")
 public class RechercheConsultationController {
 
     private final RechercheConsultationService service;
@@ -34,16 +33,23 @@ public class RechercheConsultationController {
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
-                "service", "module2-recherche-consultation"
+                "service", "module2-recherche-consultation",
+                "entite", "Voyage"
         ));
     }
 
     // =========================================================================
-    // 1. RECHERCHE, FILTRAGE ET TRI DES VOYAGES
+    // 1. CRUD COMPLET DE L'ENTITÉ VOYAGE
     // =========================================================================
 
+    @PostMapping("/voyages")
+    @Operation(summary = "1. [CREATE] Créer une nouvelle offre de voyage")
+    public ResponseEntity<VoyageResponse> creerVoyage(@Valid @RequestBody VoyageRequest request) {
+        return new ResponseEntity<>(service.creerVoyage(request), HttpStatus.CREATED);
+    }
+
     @GetMapping("/voyages")
-    @Operation(summary = "Rechercher, filtrer et trier les offres de voyages (GET multicritères)")
+    @Operation(summary = "2. [READ ALL / SEARCH] Rechercher, filtrer et trier les voyages")
     public ResponseEntity<List<VoyageResponse>> rechercherVoyages(
             @RequestParam(required = false) String motCle,
             @RequestParam(required = false) String villeDepart,
@@ -52,7 +58,6 @@ public class RechercheConsultationController {
             @RequestParam(required = false) String compagnie,
             @RequestParam(required = false) TypeTransport typeTransport,
             @RequestParam(required = false) CategorieOffre categorie,
-            @RequestParam(required = false) ClasseBillet classeBillet,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDepartMin,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDepartMax,
             @RequestParam(required = false) BigDecimal prixMin,
@@ -75,7 +80,6 @@ public class RechercheConsultationController {
                 .compagnie(compagnie)
                 .typeTransport(typeTransport)
                 .categorie(categorie)
-                .classeBillet(classeBillet)
                 .dateDepartMin(dateDepartMin)
                 .dateDepartMax(dateDepartMax)
                 .prixMin(prixMin)
@@ -94,81 +98,14 @@ public class RechercheConsultationController {
         return ResponseEntity.ok(service.rechercherEtFiltrerVoyages(criteres));
     }
 
-    @PostMapping("/voyages/search")
-    @Operation(summary = "Rechercher, filtrer et trier les offres de voyages via un corps JSON")
-    public ResponseEntity<List<VoyageResponse>> rechercherVoyagesPost(@RequestBody CritereRechercheRequest criteres) {
-        return ResponseEntity.ok(service.rechercherEtFiltrerVoyages(criteres));
-    }
-
-    // =========================================================================
-    // 2. RECHERCHE, FILTRAGE ET TRI DES OFFRES DE BILLETS
-    // =========================================================================
-
-    @GetMapping("/billets")
-    @Operation(summary = "Rechercher, filtrer et trier directement les offres de billets par classe, budget et options")
-    public ResponseEntity<List<OffreBilletDto>> rechercherBillets(
-            @RequestParam(required = false) ClasseBillet classe,
-            @RequestParam(required = false) BigDecimal prixMax,
-            @RequestParam(required = false) Boolean remboursable,
-            @RequestParam(required = false) Boolean modifiable,
-            @RequestParam(required = false) Integer bagageSouteMinKg,
-            @RequestParam(required = false) String villeDepart,
-            @RequestParam(required = false) String villeDestination,
-            @RequestParam(defaultValue = "prix") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-
-        return ResponseEntity.ok(service.rechercherBillets(
-                classe, prixMax, remboursable, modifiable, bagageSouteMinKg,
-                villeDepart, villeDestination, sortBy, sortDir));
-    }
-
-    @GetMapping("/billets/{id}")
-    @Operation(summary = "Consulter le détail d'une offre de billet spécifique")
-    public ResponseEntity<OffreBilletDto> consulterBillet(@PathVariable Long id) {
-        return ResponseEntity.ok(service.consulterBilletParId(id));
-    }
-
-    @PostMapping("/voyages/{voyageId}/billets")
-    @Operation(summary = "Ajouter une nouvelle offre de billet à un voyage existant")
-    public ResponseEntity<OffreBilletDto> creerBillet(
-            @PathVariable Long voyageId,
-            @Valid @RequestBody OffreBilletDto request) {
-        return new ResponseEntity<>(service.creerBilletPourVoyage(voyageId, request), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/billets/{id}")
-    @Operation(summary = "Modifier une offre de billet existante")
-    public ResponseEntity<OffreBilletDto> modifierBillet(
-            @PathVariable Long id,
-            @Valid @RequestBody OffreBilletDto request) {
-        return ResponseEntity.ok(service.modifierBillet(id, request));
-    }
-
-    @DeleteMapping("/billets/{id}")
-    @Operation(summary = "Supprimer une offre de billet")
-    public ResponseEntity<Void> supprimerBillet(@PathVariable Long id) {
-        service.supprimerBillet(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // =========================================================================
-    // 3. CONSULTATION DÉTAILLÉE ET GESTION DES OFFRES DE VOYAGES
-    // =========================================================================
-
     @GetMapping("/voyages/{id}")
-    @Operation(summary = "Consulter les détails complets d'une offre de voyage (incrémente le compteur de popularité)")
+    @Operation(summary = "3. [READ ONE] Consulter les détails d'un voyage par son ID")
     public ResponseEntity<VoyageResponse> consulterVoyage(@PathVariable Long id) {
         return ResponseEntity.ok(service.consulterVoyageParId(id));
     }
 
-    @PostMapping("/voyages")
-    @Operation(summary = "Créer une nouvelle offre de voyage avec ses classes de billets")
-    public ResponseEntity<VoyageResponse> creerVoyage(@Valid @RequestBody VoyageRequest request) {
-        return new ResponseEntity<>(service.creerVoyage(request), HttpStatus.CREATED);
-    }
-
     @PutMapping("/voyages/{id}")
-    @Operation(summary = "Modifier une offre de voyage existante")
+    @Operation(summary = "4. [UPDATE] Modifier une offre de voyage existante")
     public ResponseEntity<VoyageResponse> modifierVoyage(
             @PathVariable Long id,
             @Valid @RequestBody VoyageRequest request) {
@@ -176,34 +113,36 @@ public class RechercheConsultationController {
     }
 
     @DeleteMapping("/voyages/{id}")
-    @Operation(summary = "Supprimer une offre de voyage")
+    @Operation(summary = "5. [DELETE] Supprimer une offre de voyage")
     public ResponseEntity<Void> supprimerVoyage(@PathVariable Long id) {
         service.supprimerVoyage(id);
         return ResponseEntity.noContent().build();
     }
 
     // =========================================================================
-    // 4. COMPARATEUR D'OFFRES CÔTE-À-CÔTE
+    // 2. RECHERCHE AVANCÉE, COMPARAISON ET SUGGESTIONS
     // =========================================================================
 
+    @PostMapping("/voyages/search")
+    @Operation(summary = "Rechercher et filtrer les voyages via un corps JSON")
+    public ResponseEntity<List<VoyageResponse>> rechercherVoyagesPost(@RequestBody CritereRechercheRequest criteres) {
+        return ResponseEntity.ok(service.rechercherEtFiltrerVoyages(criteres));
+    }
+
     @GetMapping("/comparer")
-    @Operation(summary = "Comparer entre 2 et 5 offres côte-à-côte par leurs IDs (ex: ?ids=1,2,3)")
+    @Operation(summary = "Comparer entre 2 et 5 offres de voyage côte-à-côte (ex: ?ids=1,2)")
     public ResponseEntity<ComparaisonResponse> comparerOffresGet(@RequestParam List<Long> ids) {
         return ResponseEntity.ok(service.comparerOffres(ids));
     }
 
     @PostMapping("/comparer")
-    @Operation(summary = "Comparer entre 2 et 5 offres côte-à-côte via une liste d'IDs JSON")
+    @Operation(summary = "Comparer des voyages via une liste d'IDs JSON")
     public ResponseEntity<ComparaisonResponse> comparerOffresPost(@RequestBody List<Long> ids) {
         return ResponseEntity.ok(service.comparerOffres(ids));
     }
 
-    // =========================================================================
-    // 5. SUGGESTIONS ET RECOMMANDATIONS INTELLIGENTES
-    // =========================================================================
-
     @GetMapping("/suggestions")
-    @Operation(summary = "Obtenir des suggestions intelligentes (tendances, promotions, petits budgets, meilleur rapport qualité/prix)")
+    @Operation(summary = "Obtenir des suggestions intelligentes (tendances, promotions, petits budgets)")
     public ResponseEntity<SuggestionsResponse> obtenirSuggestionsGlobales(
             @RequestParam(required = false) String villeDestination,
             @RequestParam(required = false) BigDecimal budgetMax,
@@ -212,33 +151,29 @@ public class RechercheConsultationController {
     }
 
     @GetMapping("/voyages/{id}/suggestions")
-    @Operation(summary = "Obtenir des suggestions similaires et des alternatives moins chères pour une offre consultée")
+    @Operation(summary = "Obtenir des alternatives et suggestions similaires pour un voyage")
     public ResponseEntity<SuggestionsResponse> obtenirSuggestionsPourOffre(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtenirSuggestionsPourOffre(id));
     }
 
-    // =========================================================================
-    // 6. STATISTIQUES ET FILTRES DISPONIBLES
-    // =========================================================================
-
     @GetMapping("/statistiques")
-    @Operation(summary = "Obtenir les statistiques du catalogue et les listes de filtres disponibles (villes, compagnies, prix min/max)")
+    @Operation(summary = "Obtenir les statistiques du catalogue et les filtres disponibles")
     public ResponseEntity<StatistiquesRechercheResponse> getStatistiques() {
         return ResponseEntity.ok(service.getStatistiquesEtFiltres());
     }
 
     // =========================================================================
-    // 7. ENDPOINTS D'INTÉGRATION INTER-SERVICES (MODULE 3 RÉSERVATION)
+    // 3. INTÉGRATION INTER-SERVICES (MODULE 3 RÉSERVATION)
     // =========================================================================
 
     @GetMapping("/voyages/{id}/disponibilite")
-    @Operation(summary = "Vérifier la disponibilité et le tarif unitaire d'un voyage (format compatible Module 3 Reservation/Disponibilite)")
+    @Operation(summary = "Vérifier la disponibilité et le tarif d'un voyage")
     public ResponseEntity<Map<String, Object>> verifierDisponibilite(@PathVariable Long id) {
         return ResponseEntity.ok(service.verifierDisponibilitePourReservation(id));
     }
 
     @PatchMapping("/voyages/{id}/places")
-    @Operation(summary = "Décrémenter ou ajuster les places disponibles après confirmation d'une réservation dans le Module 3")
+    @Operation(summary = "Mettre à jour les places disponibles après une réservation")
     public ResponseEntity<Map<String, Object>> mettreAJourPlaces(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") int placesReservees) {

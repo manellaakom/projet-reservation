@@ -1,9 +1,7 @@
 package com.travel.recherche.mapper;
 
-import com.travel.recherche.dto.OffreBilletDto;
 import com.travel.recherche.dto.VoyageRequest;
 import com.travel.recherche.dto.VoyageResponse;
-import com.travel.recherche.entity.OffreBillet;
 import com.travel.recherche.entity.Voyage;
 import org.springframework.stereotype.Component;
 
@@ -11,13 +9,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class VoyageMapper {
 
     public Voyage toEntity(VoyageRequest request) {
-        Voyage voyage = Voyage.builder()
+        return Voyage.builder()
                 .codeVoyage(request.getCodeVoyage())
                 .titre(request.getTitre())
                 .description(request.getDescription())
@@ -45,68 +42,59 @@ public class VoyageMapper {
                 .imageUrl(request.getImageUrl())
                 .statut(request.getStatut())
                 .build();
+    }
 
-        if (request.getBillets() != null) {
-            for (OffreBilletDto billetDto : request.getBillets()) {
-                voyage.addBillet(toBilletEntity(billetDto));
-            }
+    public void updateEntity(Voyage voyage, VoyageRequest request) {
+        voyage.setCodeVoyage(request.getCodeVoyage());
+        voyage.setTitre(request.getTitre());
+        voyage.setDescription(request.getDescription());
+        voyage.setVilleDepart(request.getVilleDepart());
+        voyage.setVilleDestination(request.getVilleDestination());
+        voyage.setPaysDestination(request.getPaysDestination());
+        voyage.setCompagnie(request.getCompagnie());
+        voyage.setTypeTransport(request.getTypeTransport());
+        voyage.setCategorie(request.getCategorie());
+        voyage.setDateDepart(request.getDateDepart());
+        voyage.setDateArrivee(request.getDateArrivee());
+        voyage.setDureeMinutes(request.getDureeMinutes());
+        if (request.getEscales() != null) {
+            voyage.setEscales(request.getEscales());
         }
-        return voyage;
-    }
-
-    public OffreBillet toBilletEntity(OffreBilletDto dto) {
-        return OffreBillet.builder()
-                .codeOffreBillet(dto.getCodeOffreBillet())
-                .classe(dto.getClasse())
-                .prix(dto.getPrix())
-                .placesRestantes(dto.getPlacesRestantes())
-                .bagageCabineKg(dto.getBagageCabineKg() != null ? dto.getBagageCabineKg() : 8)
-                .bagageSouteKg(dto.getBagageSouteKg() != null ? dto.getBagageSouteKg() : 0)
-                .modifiable(Boolean.TRUE.equals(dto.getModifiable()))
-                .remboursable(Boolean.TRUE.equals(dto.getRemboursable()))
-                .choixSiegeGratuit(Boolean.TRUE.equals(dto.getChoixSiegeGratuit()))
-                .accesSalonVip(Boolean.TRUE.equals(dto.getAccesSalonVip()))
-                .conditionsTarifaires(dto.getConditionsTarifaires())
-                .build();
-    }
-
-    public OffreBilletDto toBilletDto(OffreBillet billet) {
-        Voyage v = billet.getVoyage();
-        return OffreBilletDto.builder()
-                .id(billet.getId())
-                .codeOffreBillet(billet.getCodeOffreBillet())
-                .classe(billet.getClasse())
-                .prix(billet.getPrix())
-                .placesRestantes(billet.getPlacesRestantes())
-                .bagageCabineKg(billet.getBagageCabineKg())
-                .bagageSouteKg(billet.getBagageSouteKg())
-                .modifiable(billet.getModifiable())
-                .remboursable(billet.getRemboursable())
-                .choixSiegeGratuit(billet.getChoixSiegeGratuit())
-                .accesSalonVip(billet.getAccesSalonVip())
-                .conditionsTarifaires(billet.getConditionsTarifaires())
-                .voyageId(v != null ? v.getId() : null)
-                .codeVoyage(v != null ? v.getCodeVoyage() : null)
-                .titreVoyage(v != null ? v.getTitre() : null)
-                .villeDepart(v != null ? v.getVilleDepart() : null)
-                .villeDestination(v != null ? v.getVilleDestination() : null)
-                .compagnie(v != null ? v.getCompagnie() : null)
-                .typeTransport(v != null ? v.getTypeTransport() : null)
-                .dateDepart(v != null ? v.getDateDepart() : null)
-                .dateArrivee(v != null ? v.getDateArrivee() : null)
-                .build();
+        voyage.setPrixBase(request.getPrixBase());
+        voyage.setPrixPromo(request.getPrixPromo());
+        voyage.setEnPromotion(Boolean.TRUE.equals(request.getEnPromotion()));
+        voyage.setPlacesDisponibles(request.getPlacesDisponibles());
+        if (request.getNoteMoyenne() != null) {
+            voyage.setNoteMoyenne(request.getNoteMoyenne());
+        }
+        if (request.getNombreAvis() != null) {
+            voyage.setNombreAvis(request.getNombreAvis());
+        }
+        if (request.getBagageCabineInclus() != null) {
+            voyage.setBagageCabineInclus(request.getBagageCabineInclus());
+        }
+        voyage.setBagageSouteInclus(Boolean.TRUE.equals(request.getBagageSouteInclus()));
+        voyage.setAnnulationGratuite(Boolean.TRUE.equals(request.getAnnulationGratuite()));
+        voyage.setRepasInclus(Boolean.TRUE.equals(request.getRepasInclus()));
+        voyage.setWifiDisponible(Boolean.TRUE.equals(request.getWifiDisponible()));
+        if (request.getImageUrl() != null) {
+            voyage.setImageUrl(request.getImageUrl());
+        }
+        if (request.getStatut() != null) {
+            voyage.setStatut(request.getStatut());
+        }
     }
 
     public VoyageResponse toResponse(Voyage voyage) {
+        if (voyage == null) {
+            return null;
+        }
+
         BigDecimal prixEffectif = voyage.getPrixEffectif();
         int pourcentageReduction = calculerReduction(voyage.getPrixBase(), voyage.getPrixPromo(), voyage.getEnPromotion());
         int scoreQualitePrix = calculerScoreQualitePrix(voyage, prixEffectif, pourcentageReduction);
         List<String> badges = genererBadges(voyage, pourcentageReduction, scoreQualitePrix);
         List<String> avantages = genererAvantagesCles(voyage);
-
-        List<OffreBilletDto> billetsDto = voyage.getBillets() != null
-                ? voyage.getBillets().stream().map(this::toBilletDto).collect(Collectors.toList())
-                : new ArrayList<>();
 
         return VoyageResponse.builder()
                 .id(voyage.getId())
@@ -143,7 +131,6 @@ public class VoyageMapper {
                 .scoreQualitePrix(scoreQualitePrix)
                 .badgesRecommandation(badges)
                 .avantagesCles(avantages)
-                .billets(billetsDto)
                 .build();
     }
 
@@ -160,23 +147,18 @@ public class VoyageMapper {
 
     public int calculerScoreQualitePrix(Voyage v, BigDecimal prixEffectif, int reduction) {
         double score = 55.0;
-        // Note moyenne sur 5 -> jusqu'à +20 pts
         if (v.getNoteMoyenne() != null) {
             score += (v.getNoteMoyenne() - 3.5) * 13.0;
         }
-        // Promotion -> jusqu'à +12 pts
         score += Math.min(12, reduction * 0.5);
-        // Trajet direct -> +6 pts
         if (v.getEscales() != null && v.getEscales() == 0) {
             score += 6;
         }
-        // Services inclus
         if (Boolean.TRUE.equals(v.getBagageSouteInclus())) score += 4;
         if (Boolean.TRUE.equals(v.getAnnulationGratuite())) score += 4;
         if (Boolean.TRUE.equals(v.getRepasInclus())) score += 2;
         if (Boolean.TRUE.equals(v.getWifiDisponible())) score += 2;
 
-        // Bonus tarif compétitif
         if (prixEffectif != null && prixEffectif.doubleValue() < 450.0) {
             score += 5;
         }

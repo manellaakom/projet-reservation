@@ -3,15 +3,12 @@ package com.travel.recherche.dto;
 import com.travel.recherche.enums.CategorieOffre;
 import com.travel.recherche.enums.StatutOffre;
 import com.travel.recherche.enums.TypeTransport;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class VoyageRequest {
 
@@ -73,14 +70,10 @@ public class VoyageRequest {
     private String imageUrl;
     private StatutOffre statut = StatutOffre.DISPONIBLE;
 
-    @Valid
-    private List<OffreBilletDto> billets = new ArrayList<>();
-
-
     // --- Constructors ---
     public VoyageRequest() {}
 
-    public VoyageRequest(String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut, List<OffreBilletDto> billets) {
+    public VoyageRequest(String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut) {
         this.codeVoyage = codeVoyage;
         this.titre = titre;
         this.description = description;
@@ -107,7 +100,6 @@ public class VoyageRequest {
         this.wifiDisponible = wifiDisponible;
         this.imageUrl = imageUrl;
         this.statut = statut;
-        this.billets = billets;
     }
 
     // --- Getters & Setters ---
@@ -285,12 +277,6 @@ public class VoyageRequest {
     public void setStatut(StatutOffre statut) {
         this.statut = statut;
     }
-    public List<OffreBilletDto> getBillets() {
-        return this.billets;
-    }
-    public void setBillets(List<OffreBilletDto> billets) {
-        this.billets = billets;
-    }
 
     // --- Builder Pattern ---
     public static VoyageRequestBuilder builder() {
@@ -324,7 +310,6 @@ public class VoyageRequest {
         private Boolean wifiDisponible = false;
         private String imageUrl;
         private StatutOffre statut = StatutOffre.DISPONIBLE;
-        private List<OffreBilletDto> billets = new ArrayList<>();
 
         public VoyageRequestBuilder() {}
 
@@ -432,10 +417,6 @@ public class VoyageRequest {
             this.statut = statut;
             return this;
         }
-        public VoyageRequestBuilder billets(List<OffreBilletDto> billets) {
-            this.billets = billets;
-            return this;
-        }
 
         public VoyageRequest build() {
             VoyageRequest instance = new VoyageRequest();
@@ -465,10 +446,7 @@ public class VoyageRequest {
             instance.wifiDisponible = this.wifiDisponible;
             instance.imageUrl = this.imageUrl;
             instance.statut = this.statut;
-            instance.billets = this.billets;
             return instance;
         }
     }
-
 }
-

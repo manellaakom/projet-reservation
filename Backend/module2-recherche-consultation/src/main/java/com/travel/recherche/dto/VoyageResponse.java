@@ -43,17 +43,15 @@ public class VoyageResponse {
     private String imageUrl;
     private StatutOffre statut;
 
-    // Indicateurs calculés pour la comparaison et les suggestions
+    // Indicateurs calculés
     private Integer scoreQualitePrix;
     private List<String> badgesRecommandation = new ArrayList<>();
     private List<String> avantagesCles = new ArrayList<>();
-    private List<OffreBilletDto> billets = new ArrayList<>();
-
 
     // --- Constructors ---
     public VoyageResponse() {}
 
-    public VoyageResponse(Long id, String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, String dureeFormatee, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, BigDecimal prixEffectif, Integer pourcentageReduction, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Integer nombreConsultations, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut, Integer scoreQualitePrix, List<String> badgesRecommandation, List<String> avantagesCles, List<OffreBilletDto> billets) {
+    public VoyageResponse(Long id, String codeVoyage, String titre, String description, String villeDepart, String villeDestination, String paysDestination, String compagnie, TypeTransport typeTransport, CategorieOffre categorie, LocalDateTime dateDepart, LocalDateTime dateArrivee, Integer dureeMinutes, String dureeFormatee, Integer escales, BigDecimal prixBase, BigDecimal prixPromo, BigDecimal prixEffectif, Integer pourcentageReduction, Boolean enPromotion, Integer placesDisponibles, Double noteMoyenne, Integer nombreAvis, Integer nombreConsultations, Boolean bagageCabineInclus, Boolean bagageSouteInclus, Boolean annulationGratuite, Boolean repasInclus, Boolean wifiDisponible, String imageUrl, StatutOffre statut, Integer scoreQualitePrix, List<String> badgesRecommandation, List<String> avantagesCles) {
         this.id = id;
         this.codeVoyage = codeVoyage;
         this.titre = titre;
@@ -88,7 +86,6 @@ public class VoyageResponse {
         this.scoreQualitePrix = scoreQualitePrix;
         this.badgesRecommandation = badgesRecommandation;
         this.avantagesCles = avantagesCles;
-        this.billets = billets;
     }
 
     // --- Getters & Setters ---
@@ -314,12 +311,6 @@ public class VoyageResponse {
     public void setAvantagesCles(List<String> avantagesCles) {
         this.avantagesCles = avantagesCles;
     }
-    public List<OffreBilletDto> getBillets() {
-        return this.billets;
-    }
-    public void setBillets(List<OffreBilletDto> billets) {
-        this.billets = billets;
-    }
 
     // --- Builder Pattern ---
     public static VoyageResponseBuilder builder() {
@@ -361,7 +352,6 @@ public class VoyageResponse {
         private Integer scoreQualitePrix;
         private List<String> badgesRecommandation = new ArrayList<>();
         private List<String> avantagesCles = new ArrayList<>();
-        private List<OffreBilletDto> billets = new ArrayList<>();
 
         public VoyageResponseBuilder() {}
 
@@ -501,10 +491,6 @@ public class VoyageResponse {
             this.avantagesCles = avantagesCles;
             return this;
         }
-        public VoyageResponseBuilder billets(List<OffreBilletDto> billets) {
-            this.billets = billets;
-            return this;
-        }
 
         public VoyageResponse build() {
             VoyageResponse instance = new VoyageResponse();
@@ -542,10 +528,7 @@ public class VoyageResponse {
             instance.scoreQualitePrix = this.scoreQualitePrix;
             instance.badgesRecommandation = this.badgesRecommandation;
             instance.avantagesCles = this.avantagesCles;
-            instance.billets = this.billets;
             return instance;
         }
     }
-
 }
-
