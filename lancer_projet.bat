@@ -7,6 +7,11 @@ echo ==========================================================
 set JAVA_CMD="C:\Users\Nour\AppData\Local\Programs\IntelliJ IDEA 2026.2.3\jbr\bin\java.exe"
 set BASE_DIR=%~dp0
 
+echo [Nettoyage] Liberation des ports si deja occupes...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8761 " ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8082 " ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8080 " ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
+
 echo [1/4] Verification et demarrage d'Eureka Discovery (Port 8761)...
 start "Eureka Server [8761]" %JAVA_CMD% -jar "%BASE_DIR%Backend\discovery\target\discovery-0.0.1-SNAPSHOT.jar"
 
