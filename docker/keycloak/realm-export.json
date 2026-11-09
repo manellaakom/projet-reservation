@@ -1,0 +1,84 @@
+{
+  "realm": "skyvoyage",
+  "enabled": true,
+  "displayName": "SkyVoyage IAM Realm",
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrateur SkyVoyage (Accès complet CRUD et monitoring)"
+      },
+      {
+        "name": "user",
+        "description": "Utilisateur standard (Consultation et réservation bagages)"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "skyvoyage-client",
+      "name": "SkyVoyage Frontend & Gateway Client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "*"
+      ]
+    },
+    {
+      "clientId": "skyvoyage-backend",
+      "name": "SkyVoyage Backend Resource Server",
+      "enabled": true,
+      "bearerOnly": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@skyvoyage.tn",
+      "firstName": "Admin",
+      "lastName": "SkyVoyage",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin",
+        "user"
+      ]
+    },
+    {
+      "username": "voyageur",
+      "enabled": true,
+      "email": "voyageur@skyvoyage.tn",
+      "firstName": "Passager",
+      "lastName": "Voyageur",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "user"
+      ]
+    }
+  ]
+}
