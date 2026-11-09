@@ -45,13 +45,16 @@ public class SecurityConfig {
                         // 2. Endpoints d'authentification
                         .requestMatchers("/api/recherche/auth/**").permitAll()
 
-                        // 3. Toutes les consultations en lecture seule (GET) sont publiques pour les voyageurs
+                        // 3. Toutes les consultations et recherches sont publiques pour les voyageurs
                         .requestMatchers(HttpMethod.GET, "/api/recherche/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/recherche/voyages/search").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/recherche/comparer").permitAll()
 
                         // 4. Démonstrations inter-services (Feign & RabbitMQ)
                         .requestMatchers("/api/recherche/inter-services/**").permitAll()
 
-                        // 5. Opérations protégées sur les offres de voyage
+                        // 5. Opérations protégées sur les offres de voyage (Gestion CRUD par Admin/Gestionnaire)
+                        .requestMatchers(HttpMethod.POST, "/api/recherche/voyages").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/recherche/voyages/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/recherche/voyages/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/recherche/voyages/**").hasRole("ADMIN")
