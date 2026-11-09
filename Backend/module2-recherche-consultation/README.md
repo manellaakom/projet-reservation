@@ -25,6 +25,25 @@ Microservice **Spring Boot 3.2.5 (Java 17)** — Responsable de la gestion uniqu
 
 ---
 
+## 🔒 Sécurité Spring Security & JWT (Note 2 de la Grille AWD)
+
+Le microservice intègre une couche de sécurité complète avec **Spring Security 6** et **JJWT (HMAC-SHA256)** :
+
+- **Règles d'accès (RBAC)** :
+  - **Consultation publique (sans token)** : Recherche, détails, comparateur, suggestions, statistiques, Swagger UI et Actuator restent accessibles librement pour les voyageurs.
+  - **Opérations d'écriture protégées (Token JWT requis)** : `POST /api/recherche/voyages` (Création) et `PUT /api/recherche/voyages/**` (Modification).
+  - **Opérations critiques réservées (Rôle `ROLE_ADMIN` requis)** : `DELETE /api/recherche/voyages/**`.
+- **Composants Sécurité** :
+  - [`SecurityConfig.java`](src/main/java/com/travel/recherche/security/SecurityConfig.java) : Configuration de la chaîne de filtres stateless et des autorisations d'URL.
+  - [`JwtUtils.java`](src/main/java/com/travel/recherche/security/JwtUtils.java) : Signature et vérification des tokens JWT.
+  - [`JwtAuthenticationFilter.java`](src/main/java/com/travel/recherche/security/JwtAuthenticationFilter.java) : Filtre validant le header `Authorization: Bearer <token>`.
+  - [`AuthController.java`](src/main/java/com/travel/recherche/controller/AuthController.java) : Endpoints `/api/recherche/auth/login`, `/register`, `/verify`.
+- **Démonstration directe dans Swagger** :
+  - `GET /api/recherche/auth/demo-tokens` fournit instantanément un token `ADMIN` et `USER`.
+  - Cliquez sur le bouton vert **"Authorize" 🔓** en haut de Swagger UI pour appliquer le token !
+
+---
+
 ## 🔄 Communications Inter-Microservices (Note 4 de la Grille AWD)
 
 Toutes les interfaces et implémentations de communication de votre module se trouvent dans :
@@ -53,9 +72,26 @@ Toutes les interfaces et implémentations de communication de votre module se tr
 
 ---
 
-## 🚀 Lancement Exclusif du Module 2
+## 🐳 Conteneurisation Docker (Note 2 pts)
 
-### Depuis ce répertoire (`Backend/module2-recherche-consultation`) :
+### 1. Construire l'image Docker du Module 2 :
+```bash
+docker build -t module2-recherche:latest .
+```
+
+### 2. Lancer Module 2 + MySQL + RabbitMQ avec Docker Compose :
+```bash
+docker compose up -d
+```
+
+Pour arrêter les conteneurs :
+```bash
+docker compose down
+```
+
+---
+
+## 🚀 Lancement en Local (Windows / Maven)
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -73,9 +109,10 @@ java -jar target/module2-recherche-consultation-0.0.1-SNAPSHOT.jar
 
 ---
 
-## 🌐 URLs & Endpoints Utiles
+## 🌐 URLs & Endpoints Clés
 
-- **Swagger UI** : `http://localhost:8082/swagger-ui.html`
-- **Actuator Health** : `http://localhost:8082/actuator/health`
+- **Swagger UI avec Sécurité** : `http://localhost:8082/swagger-ui.html`
+- **Tokens de test JWT** : `http://localhost:8082/api/recherche/auth/demo-tokens`
+- **Actuator Health & Metrics** : `http://localhost:8082/actuator/health`
 - **Démonstrations Feign** : `http://localhost:8082/api/recherche/inter-services/feign/...`
 - **Démonstrations RabbitMQ** : `http://localhost:8082/api/recherche/inter-services/rabbitmq/...`
