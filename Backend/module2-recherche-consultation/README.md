@@ -1,57 +1,81 @@
 # Module 2 — Recherche & Consultation de Voyages et Billets
 
-Microservice **Spring Boot 3.2.5 (Java 17)** permettant de :
-1. **Rechercher des voyages et des billets** (vols, trains, bateaux, séjours packagés)
-2. **Filtrer et trier les résultats** (destination, départ, dates, budget min/max, compagnie, type de transport, classe de billet, trajet direct, promotions, bagages inclus, annulation gratuite + tri par prix, durée, note, popularité ou score qualité/prix)
-3. **Consulter les offres en détail** (itinéraire, services à bord, classes de billets associées, conditions tarifaires, compteur de popularité)
-4. **Comparer plusieurs offres côte-à-côte** (calcul automatique du meilleur prix, du trajet le plus court, de la meilleure note, du meilleur score qualité/prix sur 100 et synthèse comparative)
-5. **Proposer des suggestions intelligentes** (offres tendances, meilleures promotions, petits budgets, offres similaires et alternatives moins chères)
+Microservice **Spring Boot 3.2.5 (Java 17)** — Responsable de la gestion unique de l'entité `Voyage` au sein de la plateforme distribuée.
 
 ---
 
-## 🏗️ Architecture & Intégration Microservices
+## 🎯 Fonctionnalités Métier
 
-- **Nom Eureka** : `recherche-consultation`
-- **Port HTTP** : `8082`
-- **Swagger UI** : `http://localhost:8082/swagger-ui.html`
-- **Console H2** : `http://localhost:8082/h2-console` (`jdbc:h2:mem:recherche_db`)
-- **Profil MySQL** : `--spring.profiles.active=mysql` (`recherche_consultation_db`)
-- **Communication Inter-services** :
-  - S'enregistre auprès d'**Eureka Discovery Server** (`http://localhost:8761/eureka`)
-  - Client OpenFeign `ReservationDisponibiliteClient` connecté au **Module 3 (Gestion de Réservation)**
+1. **CRUD Complet de l'Entité Voyage** :
+   - Création (`POST /api/recherche/voyages`), Lecture (`GET`), Modification (`PUT`), Suppression (`DELETE`).
+2. **Recherche Multicritères & Filtrage Dynamique** :
+   - Filtres combinables : mot-clé, ville/pays de départ et de destination, dates (min/max), budget min/max, compagnie, type de transport (`VOL`, `TRAIN`, `BATEAU`, `SEJOUR_PACKAGE`), trajet direct (0 escale), promotions, bagage en soute inclus, annulation gratuite, nombre de places minimum, note moyenne minimum.
+   - Tri dynamique : par prix (`prix`), durée (`duree`), note (`note`), popularité (`popularite`) en ordre croissant (`asc`) ou décroissant (`desc`).
+3. **Consultation Détaillée & Compteur de Popularité** :
+   - `GET /api/recherche/voyages/{id}` incrémente automatiquement le compteur de consultations.
+4. **Comparateur Intelligent d'Offres (2 à 5 voyages)** :
+   - `GET /api/recherche/comparer?ids=1,2,3`
+   - Détection automatique du meilleur prix, du trajet le plus court, de la meilleure note.
+   - Calcul d'un **score qualité/prix sur 100** avec synthèse textuelle de recommandation.
+5. **Moteur de Suggestions Intelligentes** :
+   - `GET /api/recherche/suggestions` : tendances, meilleures promotions, petits budgets.
+   - `GET /api/recherche/voyages/{id}/suggestions` : offres similaires et alternatives moins chères.
+6. **Statistiques Globales du Catalogue** :
+   - `GET /api/recherche/statistiques` : nombre d'offres, prix moyen/min/max, villes desservies, compagnies actives.
 
 ---
 
-## 🚀 Lancement du Microservice
+## 🔄 Communications Inter-Microservices (Note 4 de la Grille AWD)
 
-Depuis `Backend/module2-recherche-consultation` :
+Toutes les interfaces et implémentations de communication de votre module se trouvent dans :
+- Clients Feign : `src/main/java/com/travel/recherche/client/`
+- Événements RabbitMQ : `src/main/java/com/travel/recherche/event/`
+- Contrôleur de test : `src/main/java/com/travel/recherche/controller/InterServiceCommunicationController.java`
+
+### A. Communications Synchrones (OpenFeign)
+| Client OpenFeign | Service Cible | Méthode & Rôle |
+|---|---|---|
+| [`ReservationDisponibiliteClient.java`](src/main/java/com/travel/recherche/client/ReservationDisponibiliteClient.java) | Module 3 (FastAPI :8003) | `getDisponibiliteByVoyage(id)` : Vérification des disponibilités en temps réel |
+| [`BagageClient.java`](src/main/java/com/travel/recherche/client/BagageClient.java) | Module 1 (Bagages :8081) | `getBagageStatistics()`, `getAllBagages()` : Récupération des options bagages |
+| [`PaiementClient.java`](src/main/java/com/travel/recherche/client/PaiementClient.java) | Module 4 (Paiement :8084) | `getAllPaiements()` : Audit et consultation des paiements associés |
+
+> **Résilience active** : Chaque appel Feign est encapsulé dans [`InterServiceCommunicationService.java`](src/main/java/com/travel/recherche/service/InterServiceCommunicationService.java) avec un mécanisme de **Fallback automatique** qui évite tout plantage si un service tiers est temporairement hors ligne.
+
+### B. Communications Asynchrones (RabbitMQ)
+- **Exchange Direct** : `travel.direct.exchange`
+- **Exchange Topic** : `travel.topic.exchange`
+
+| Scénario Asynchrone | Routing Key | Queue | Action Métier dans Module 2 |
+|---|---|---|---|
+| **1. Réservation créée** | `reservation.created.key` | `recherche.reservation.queue` | Décrémente les places disponibles et booste la popularité (+10) |
+| **2. Paiement validé** | `paiement.success.key` | `recherche.paiement.queue` | Confirme la transaction et booste la popularité (+5) |
+| **3. Promotion Flash** | `voyage.promo.flash` | `recherche.promotions.queue` | Active le flag promotion et applique le nouveau tarif instantanément |
+
+---
+
+## 🚀 Lancement Exclusif du Module 2
+
+### Depuis ce répertoire (`Backend/module2-recherche-consultation`) :
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-Ou avec le profil MySQL :
-
+Ou compilation et packaging du JAR :
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql"
+.\mvnw.cmd clean package -DskipTests
+```
+
+Exécution directe du JAR :
+```powershell
+java -jar target/module2-recherche-consultation-0.0.1-SNAPSHOT.jar
 ```
 
 ---
 
-## 📌 Principaux Endpoints REST (`/api/recherche`)
+## 🌐 URLs & Endpoints Utiles
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| `GET` | `/api/recherche/voyages` | Recherche multicritères, filtrage et tri des voyages |
-| `POST` | `/api/recherche/voyages/search` | Recherche multicritères via payload JSON |
-| `GET` | `/api/recherche/voyages/{id}` | Consultation détaillée d'une offre (+ incrémentation popularité) |
-| `POST` | `/api/recherche/voyages` | Création d'une offre de voyage avec ses billets |
-| `PUT` | `/api/recherche/voyages/{id}` | Modification d'une offre de voyage |
-| `DELETE` | `/api/recherche/voyages/{id}` | Suppression d'une offre de voyage |
-| `GET` | `/api/recherche/billets` | Recherche, filtrage et tri direct des offres de billets |
-| `GET` | `/api/recherche/billets/{id}` | Consultation détaillée d'un billet |
-| `GET` | `/api/recherche/comparer?ids=1,2,3` | Comparaison côte-à-côte de 2 à 5 offres avec synthèse |
-| `POST` | `/api/recherche/comparer` | Comparaison côte-à-côte via liste JSON d'IDs |
-| `GET` | `/api/recherche/suggestions` | Suggestions globales (tendances, promos, petits budgets, score) |
-| `GET` | `/api/recherche/voyages/{id}/suggestions` | Suggestions d'offres similaires et moins chères pour une offre |
-| `GET` | `/api/recherche/statistiques` | Statistiques du catalogue et listes dynamiques de filtres |
+- **Swagger UI** : `http://localhost:8082/swagger-ui.html`
+- **Actuator Health** : `http://localhost:8082/actuator/health`
+- **Démonstrations Feign** : `http://localhost:8082/api/recherche/inter-services/feign/...`
+- **Démonstrations RabbitMQ** : `http://localhost:8082/api/recherche/inter-services/rabbitmq/...`
