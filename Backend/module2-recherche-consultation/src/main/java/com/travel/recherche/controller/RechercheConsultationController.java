@@ -5,6 +5,7 @@ import com.travel.recherche.enums.CategorieOffre;
 import com.travel.recherche.enums.TypeTransport;
 import com.travel.recherche.service.RechercheConsultationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -43,7 +44,7 @@ public class RechercheConsultationController {
     // =========================================================================
 
     @PostMapping("/voyages")
-    @Operation(summary = "1. [CREATE] Créer une nouvelle offre de voyage")
+    @Operation(summary = "1. [CREATE] Créer une nouvelle offre de voyage", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<VoyageResponse> creerVoyage(@Valid @RequestBody VoyageRequest request) {
         return new ResponseEntity<>(service.creerVoyage(request), HttpStatus.CREATED);
     }
@@ -105,7 +106,7 @@ public class RechercheConsultationController {
     }
 
     @PutMapping("/voyages/{id}")
-    @Operation(summary = "4. [UPDATE] Modifier une offre de voyage existante")
+    @Operation(summary = "4. [UPDATE] Modifier une offre de voyage existante", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<VoyageResponse> modifierVoyage(
             @PathVariable Long id,
             @Valid @RequestBody VoyageRequest request) {
@@ -113,7 +114,7 @@ public class RechercheConsultationController {
     }
 
     @DeleteMapping("/voyages/{id}")
-    @Operation(summary = "5. [DELETE] Supprimer une offre de voyage")
+    @Operation(summary = "5. [DELETE] Supprimer une offre de voyage", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<Void> supprimerVoyage(@PathVariable Long id) {
         service.supprimerVoyage(id);
         return ResponseEntity.noContent().build();
