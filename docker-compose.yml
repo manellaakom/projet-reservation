@@ -1,12 +1,12 @@
-version: '3.8'
-
 services:
   # 1. Base de données NoSQL Redis
   redis:
-    image: redis:7-alpine
+    image: redis
     container_name: skyvoyage-redis
     ports:
       - "6379:6379"
+    volumes:
+      - ./docker/redis/data:/data
     restart: unless-stopped
     networks:
       - skyvoyage-net
@@ -49,6 +49,10 @@ services:
     container_name: skyvoyage-discovery
     ports:
       - "8761:8761"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: discovery
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
     restart: unless-stopped
     networks:
       - skyvoyage-net
@@ -62,6 +66,8 @@ services:
     ports:
       - "8888:8888"
     environment:
+      EUREKA_INSTANCE_HOSTNAME: config-server
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
     depends_on:
       - discovery
@@ -78,6 +84,8 @@ services:
     ports:
       - "8080:8080"
     environment:
+      EUREKA_INSTANCE_HOSTNAME: gateway
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
     depends_on:
@@ -96,6 +104,8 @@ services:
     ports:
       - "8081:8081"
     environment:
+      EUREKA_INSTANCE_HOSTNAME: gestion-bagages
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
