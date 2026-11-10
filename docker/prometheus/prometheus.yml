@@ -26,3 +26,8 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['config-server:8888', 'host.docker.internal:8888']
+
+  - job_name: 'recherche-consultation'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['recherche-consultation:8082', 'host.docker.internal:8082', 'host.docker.internal:9082']

@@ -1,0 +1,51 @@
+name: CI/CD Pipeline SkyVoyage
+
+on:
+  push:
+    branches: [ "main", "recherche_consultation" ]
+  pull_request:
+    branches: [ "main", "recherche_consultation" ]
+
+jobs:
+  build-frontend:
+    name: Build & Test Angular Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd Frontend
+          npm ci --legacy-peer-deps
+
+      - name: Build Angular Application
+        run: |
+          cd Frontend
+          npm run build
+
+  build-backend-module2:
+    name: Build & Package Module 2 (Recherche & Consultation)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Module 2 with Maven
+        run: |
+          cd Backend/module2-recherche-consultation
+          mvn clean test package -DskipTests
