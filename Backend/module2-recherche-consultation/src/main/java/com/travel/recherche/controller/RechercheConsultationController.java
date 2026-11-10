@@ -20,7 +20,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recherche")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 @Tag(name = "Module 2 — Gestion & Recherche des Voyages", description = "Microservice de gestion unique de l'entité Voyage : CRUD complet, recherche multi-critères, filtres, tri et suggestions")
 public class RechercheConsultationController {
 
