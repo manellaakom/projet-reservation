@@ -85,6 +85,14 @@ export class PaiementsComponent implements OnInit {
       this.verifyReturnedPayment(paymentId);
     } else if (canceledPaymentId) {
       this.successMessage = 'Le paiement a été annulé ou reste en attente de confirmation.';
+    } else {
+      const ref = this.route.snapshot.queryParamMap.get('reference');
+      const montant = this.route.snapshot.queryParamMap.get('montant');
+      if (ref || montant) {
+        this.openOnlineCheckout();
+        if (ref) this.checkoutForm.reference = ref;
+        if (montant) this.checkoutForm.montant = Number(montant);
+      }
     }
   }
 

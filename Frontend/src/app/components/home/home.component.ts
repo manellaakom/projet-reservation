@@ -199,15 +199,13 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  lastReservation: { reference: string; montant: number; titre: string } | null = null;
+
   reserverOffre(v: VoyageOffre): void {
     const prix = v.prixEffectif || v.prixPromo || v.prixBase;
     const ref = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
-    this.reservationSuccessMessage = `Place réservée avec succès pour "${v.titre}" au tarif de ${prix} DT ! Référence dossier : ${ref}`;
+    this.lastReservation = { reference: ref, montant: prix, titre: v.titre };
+    this.reservationSuccessMessage = `Place réservée avec succès pour "${v.titre}" au tarif de ${prix} DT !`;
     this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.reservationSuccessMessage = null;
-      this.cdr.detectChanges();
-    }, 5000);
   }
 }

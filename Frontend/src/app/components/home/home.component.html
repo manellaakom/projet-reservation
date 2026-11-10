@@ -2,11 +2,22 @@
 
   <!-- Message de Confirmation de Réservation Toast / Alerte -->
   <div *ngIf="reservationSuccessMessage" class="alert-booking-success">
-    <i class="pi pi-check-circle"></i>
-    <span>{{ reservationSuccessMessage }}</span>
-    <button class="alert-close" (click)="reservationSuccessMessage = null">
-      <i class="pi pi-times"></i>
-    </button>
+    <div class="alert-left-group">
+      <i class="pi pi-check-circle"></i>
+      <div class="alert-text-body">
+        <strong>{{ reservationSuccessMessage }}</strong>
+        <span class="ref-badge" *ngIf="lastReservation">Réf: {{ lastReservation.reference }}</span>
+      </div>
+    </div>
+    <div class="alert-right-group">
+      <a *ngIf="lastReservation" [routerLink]="['/paiements']" [queryParams]="{ reference: lastReservation.reference, montant: lastReservation.montant }" class="btn-pay-direct">
+        <i class="pi pi-credit-card"></i>
+        <span>Payer avec Paymee</span>
+      </a>
+      <button class="alert-close" (click)="reservationSuccessMessage = null" title="Fermer">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
   </div>
 
   <!-- En-tête Principal du Dashboard -->
