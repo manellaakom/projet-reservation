@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit SupportResponse{% endblock %}
+
+{% block body %}
+    <h1>Edit SupportResponse</h1>
+
+    {{ include('support_response/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_support_response_index') }}">back to list</a>
+
+    {{ include('support_response/_delete_form.html.twig') }}
+{% endblock %}

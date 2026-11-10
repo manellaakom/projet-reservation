@@ -1,0 +1,185 @@
+<div class="home-container">
+  <!-- Section Hero -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>SkyVoyage &bull; Module Gestion des Bagages</span>
+      </div>
+
+      <h1 class="hero-title">
+        Simplifiez la gestion <br />
+        <span class="highlight-text">de vos bagages</span>
+      </h1>
+
+      <p class="hero-description">
+        Plateforme aéroportuaire centralisée pour l'enregistrement fluide, la pesée dynamique,
+        la tarification automatisée et le rattachement en temps réel aux réservations de vos passagers.
+      </p>
+
+      <div class="hero-actions">
+        <a routerLink="/bagages" class="btn-hero-primary">
+          <i class="pi pi-briefcase"></i>
+          <span>Accéder à mon espace</span>
+          <i class="pi pi-arrow-right"></i>
+        </a>
+        <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer" class="btn-hero-secondary">
+          <i class="pi pi-file-code"></i>
+          <span>Documentation API Gateway</span>
+        </a>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="hero-metrics">
+        <div class="metric-item" *ngFor="let m of systemStats">
+          <i [class]="m.icon"></i>
+          <div class="metric-info">
+            <span class="metric-val">{{ m.value }}</span>
+            <span class="metric-lbl">{{ m.label }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visuel Hero : Carte Embarquement / Bagage Graphique -->
+    <div class="hero-visual">
+      <div class="luggage-card-preview">
+        <div class="preview-header">
+          <div class="preview-airline">
+            <span class="plane-icon">✈️</span>
+            <span>SKYVOYAGE AIRLINES</span>
+          </div>
+          <span class="preview-status-pill">Système Actif</span>
+        </div>
+
+        <div class="preview-body">
+          <div class="preview-route">
+            <div class="airport-code">
+              <span class="code">TUN</span>
+              <span class="city">Tunis Carthage</span>
+            </div>
+            <div class="flight-path">
+              <i class="pi pi-arrow-right"></i>
+              <span class="flight-no">VOL SK-402</span>
+            </div>
+            <div class="airport-code text-right">
+              <span class="code">CDG</span>
+              <span class="city">Paris Roissy</span>
+            </div>
+          </div>
+
+          <div class="preview-divider"></div>
+
+          <div class="preview-grid">
+            <div class="preview-field">
+              <span class="field-label">MODULE</span>
+              <span class="field-value">Gestion Bagages</span>
+            </div>
+            <div class="preview-field">
+              <span class="field-label">TARIFICATION</span>
+              <span class="field-value text-success">30 / 50 / 70 DT</span>
+            </div>
+            <div class="preview-field">
+              <span class="field-label">LIMITE MAX</span>
+              <span class="field-value">30.0 kg</span>
+            </div>
+            <div class="preview-field">
+              <span class="field-label">STOCKAGE</span>
+              <span class="field-value">Redis Hash</span>
+            </div>
+          </div>
+
+          <div class="barcode-preview">
+            <div class="barcode-bars"></div>
+            <span class="barcode-sub">* SKYVOYAGE-BAGGAGE-SYSTEM *</span>
+          </div>
+        </div>
+
+        <div class="preview-badge-floating">
+          <i class="pi pi-check-circle text-success"></i>
+          <div>
+            <div class="float-title">Gateway Port 8080</div>
+            <div class="float-sub">Synchronisation active</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section Fonctionnalités Clés -->
+  <section class="features-section">
+    <div class="section-header">
+      <span class="section-tag">Fonctionnalités avancées</span>
+      <h2 class="section-title">Tout ce dont vous avez besoin pour superviser vos bagages</h2>
+      <p class="section-subtitle">
+        Une suite d'outils interconnectés conçus pour garantir la conformité des charges en soute et fluidifier le traitement des passagers.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card" *ngFor="let feat of features">
+        <div class="feature-card-header">
+          <div class="feature-icon">
+            <i [class]="feat.icon"></i>
+          </div>
+          <span class="feature-tag" [ngClass]="feat.tagClass">{{ feat.tag }}</span>
+        </div>
+        <h3 class="feature-title">{{ feat.title }}</h3>
+        <p class="feature-desc">{{ feat.description }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section Workflow / Comment ça marche -->
+  <section class="workflow-section">
+    <div class="section-header">
+      <span class="section-tag">Parcours bagage</span>
+      <h2 class="section-title">Cycle de vie d'un bagage SkyVoyage</h2>
+    </div>
+
+    <div class="workflow-steps">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-icon"><i class="pi pi-plus-circle"></i></div>
+        <h4>Enregistrement</h4>
+        <p>Création du bagage avec type de bagage et référence de réservation.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-icon"><i class="pi pi-sliders-h"></i></div>
+        <h4>Pesée & Tarification</h4>
+        <p>Validation automatique du plafond de 30 kg et calcul du tarif Backend.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-icon"><i class="pi pi-link"></i></div>
+        <h4>Association</h4>
+        <p>Rattachement immédiat au dossier voyageur via l'API Gateway.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <div class="step-icon"><i class="pi pi-chart-line"></i></div>
+        <h4>Supervision & Export</h4>
+        <p>Contrôle analytique de la charge en soute et export Excel des données.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bannière CTA finale -->
+  <section class="cta-banner-section">
+    <div class="cta-banner">
+      <div class="cta-text">
+        <h2>Prêt à gérer vos bagages ?</h2>
+        <p>Accédez au tableau de bord complet avec recherche multicritère, tri dynamique et export CSV.</p>
+      </div>
+      <a routerLink="/bagages" class="btn-cta-large">
+        <i class="pi pi-briefcase"></i>
+        <span>Accéder à la Gestion des bagages</span>
+        <i class="pi pi-arrow-right"></i>
+      </a>
+    </div>
+  </section>
+</div>

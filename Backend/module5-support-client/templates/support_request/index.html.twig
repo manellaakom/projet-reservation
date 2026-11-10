@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SupportRequest index{% endblock %}
+
+{% block body %}
+    <h1>SupportRequest index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Sujet</th>
+                <th>Description</th>
+                <th>Categorie</th>
+                <th>Statut</th>
+                <th>DateCreation</th>
+                <th>DateMiseAJour</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for support_request in support_requests %}
+            <tr>
+                <td>{{ support_request.id }}</td>
+                <td>{{ support_request.sujet }}</td>
+                <td>{{ support_request.description }}</td>
+                <td>{{ support_request.categorie }}</td>
+                <td>{{ support_request.status ? support_request.status.label() : '' }}</td>
+                <td>{{ support_request.dateCreation ? support_request.dateCreation|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ support_request.dateMiseAJour ? support_request.dateMiseAJour|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_support_request_show', {'id': support_request.id}) }}">show</a>
+                    <a href="{{ path('app_support_request_edit', {'id': support_request.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="8">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_support_request_new') }}">Create new</a>
+{% endblock %}
