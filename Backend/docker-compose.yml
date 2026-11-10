@@ -1,0 +1,60 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - reservation-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --http-port=8080 --import-realm
+    ports:
+      - "127.0.0.1:8180:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  eureka:
+    build: ./eureka
+    ports:
+      - "8761:8761"
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8088:8088"
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/skyvoyage
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/skyvoyage/protocol/openid-connect/certs
+    depends_on: [eureka, keycloak]
+
+  gestion-bagages:
+    build: "./module1-Gestion des bagages"
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
+      SPRING_DATA_REDIS_HOST: redis
+    depends_on: [eureka, redis]
+
+  reservation-paiement:
+    build: ./module4-reservation-paiement
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
+      REDIS_HOST: redis
+      PAYMEE_API_KEY: ${PAYMEE_API_KEY:-}
+      PAYMEE_FRONTEND_BASE_URL: ${PAYMEE_FRONTEND_BASE_URL:-}
+      PAYMEE_WEBHOOK_URL: ${PAYMEE_WEBHOOK_URL:-}
+    depends_on: [eureka, redis]
+
+volumes:
+  reservation-redis-data:
