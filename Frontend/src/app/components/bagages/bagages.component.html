@@ -16,61 +16,6 @@
   </div>
 </div>
 
-<!-- Modal Connexion Keycloak -->
-<div *ngIf="showLoginModal" class="modal-backdrop" (click)="closeLoginModal()">
-  <div class="modal-dialog login-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div class="login-brand">
-        <i class="pi pi-shield"></i>
-        <h3>Connexion SkyVoyage</h3>
-      </div>
-    </div>
-    <div class="modal-body">
-      <p class="login-subtitle">Authentifiez-vous avec votre compte Keycloak (realm : <strong>skyvoyage</strong>)</p>
-      <div class="form-group">
-        <label class="form-label">Identifiant</label>
-        <div class="input-wrapper">
-          <i class="pi pi-user input-icon"></i>
-          <input
-            type="text"
-            class="form-control"
-            placeholder="ex: admin ou voyageur"
-            [(ngModel)]="loginUsername"
-            [disabled]="loginLoading"
-            (keyup.enter)="submitLogin()"
-            autocomplete="username"
-          />
-        </div>
-      </div>
-      <div class="form-group" style="margin-top: 1rem;">
-        <label class="form-label">Mot de passe</label>
-        <div class="input-wrapper">
-          <i class="pi pi-lock input-icon"></i>
-          <input
-            type="password"
-            class="form-control"
-            placeholder="Mot de passe"
-            [(ngModel)]="loginPassword"
-            [disabled]="loginLoading"
-            (keyup.enter)="submitLogin()"
-            autocomplete="current-password"
-          />
-        </div>
-      </div>
-      <div *ngIf="loginError" class="login-error">
-        <i class="pi pi-exclamation-triangle"></i>
-        {{ loginError }}
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary login-btn" (click)="submitLogin()" [disabled]="loginLoading">
-        <i class="pi" [ngClass]="loginLoading ? 'pi-spin pi-spinner' : 'pi-sign-in'"></i>
-        <span>{{ loginLoading ? 'Connexion...' : 'Se connecter' }}</span>
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- Header de la vue -->
 <div class="view-header">
   <div>
@@ -78,19 +23,6 @@
     <p class="view-subtitle">Supervision, tarification automatique (30 / 50 / 70 DT) et persistance Redis via l'API Gateway</p>
   </div>
   <div class="view-actions">
-    <!-- Badge utilisateur connecté -->
-    <div *ngIf="currentUser" class="user-badge" [class.admin-badge]="currentUser.isAdmin">
-      <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill' : 'pi-user'"></i>
-      <span>{{ currentUser.username }}</span>
-      <span class="role-label">{{ currentUser.isAdmin ? 'Admin' : 'User' }}</span>
-      <button class="logout-btn" (click)="logout()" title="Se déconnecter">
-        <i class="pi pi-sign-out"></i>
-      </button>
-    </div>
-    <button *ngIf="!currentUser" class="btn btn-outline" (click)="openLoginModal()">
-      <i class="pi pi-sign-in"></i>
-      <span>Connexion</span>
-    </button>
     <button *ngIf="isAdmin" class="btn btn-outline" (click)="openHistoryModal()" title="Consulter l'historique des opérations de la session">
       <i class="pi pi-history"></i>
       <span>Historique</span>

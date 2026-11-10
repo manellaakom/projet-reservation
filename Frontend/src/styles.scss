@@ -124,6 +124,89 @@ body {
         box-shadow: 0 0 8px #10b981;
       }
     }
+
+    .topbar-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+
+      i {
+        font-size: 0.95rem;
+      }
+
+      .username {
+        color: #0f172a;
+        font-weight: 700;
+      }
+
+      .role-tag {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 12px;
+        font-weight: 700;
+      }
+
+      &.admin-user {
+        background: #faf5ff;
+        border-color: #e9d5ff;
+        color: #7e22ce;
+
+        i {
+          color: #a855f7;
+        }
+
+        .role-tag {
+          background: #f3e8ff;
+          color: #6b21a8;
+        }
+      }
+
+      .btn-logout {
+        background: transparent;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        padding: 0.2rem;
+        display: flex;
+        align-items: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+
+        &:hover {
+          background: rgba(239, 68, 68, 0.1);
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    .topbar-login-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #0369a1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+      }
+    }
   }
 }
 

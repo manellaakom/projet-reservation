@@ -13,8 +13,24 @@
     <div class="topbar-actions">
       <div class="backend-pill">
         <span class="dot"></span>
-        <span>Système connecté</span>
+        <span>Gateway : 8080</span>
       </div>
+
+      <!-- Badge Utilisateur Global -->
+      <div *ngIf="currentUser" class="topbar-user-badge" [class.admin-user]="currentUser.isAdmin">
+        <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill' : 'pi-user'"></i>
+        <span class="username">{{ currentUser.username }}</span>
+        <span class="role-tag">{{ currentUser.isAdmin ? 'Admin' : 'Voyageur' }}</span>
+        <button class="btn-logout" (click)="logout()" title="Se déconnecter">
+          <i class="pi pi-sign-out"></i>
+        </button>
+      </div>
+
+      <!-- Bouton Connexion si non connecté -->
+      <a *ngIf="!currentUser" routerLink="/login" class="topbar-login-btn">
+        <i class="pi pi-user"></i>
+        <span>Connexion (Keycloak)</span>
+      </a>
     </div>
   </header>
 
@@ -41,6 +57,12 @@
             <a routerLink="/bagages" routerLinkActive="active" class="menu-item">
               <i class="pi pi-briefcase"></i>
               <span>Gestion des Bagages</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/login" routerLinkActive="active" class="menu-item">
+              <i class="pi pi-shield"></i>
+              <span>Espace Connexion</span>
             </a>
           </li>
         </ul>

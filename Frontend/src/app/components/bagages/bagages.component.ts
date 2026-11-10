@@ -72,11 +72,6 @@ export class BagagesComponent implements OnInit {
   error: string | null = null;
 
   // Authentification
-  showLoginModal: boolean = false;
-  loginUsername: string = '';
-  loginPassword: string = '';
-  loginError: string | null = null;
-  loginLoading: boolean = false;
   currentUser: UserProfile | null = null;
 
   get isAdmin(): boolean {
@@ -146,12 +141,11 @@ export class BagagesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.currentUser = this.authService.getCurrentUser();
-    if (this.authService.isAuthenticated()) {
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
       this.loadAllData();
-    } else {
-      this.showLoginModal = true;
-    }
+      this.triggerChangeDetection();
+    });
   }
 
   /**
@@ -357,61 +351,11 @@ export class BagagesComponent implements OnInit {
       error: (err) => {
         console.error('Erreur Gateway bagages:', err);
         if (err.status === 401 || err.status === 0) {
-          this.showLoginModal = true;
-          this.error = null;
+          this.error = 'Session non authentifiée. Veuillez vous connecter depuis la page de connexion.';
         } else {
           const errMsg = this.extractErrorMessage(err);
           this.error = `Communication Gateway interrompue (port 8080) : ${errMsg}`;
           this.showToast('error', 'Erreur de connexion', this.error);
-        }
-        this.triggerChangeDetection();
-      }
-    });
-  }
-
-  // --- Authentification ---
-
-  openLoginModal(): void {
-    this.showLoginModal = true;
-    this.loginError = null;
-    this.loginUsername = '';
-    this.loginPassword = '';
-    this.triggerChangeDetection();
-  }
-
-  closeLoginModal(): void {
-    this.showLoginModal = false;
-    this.loginError = null;
-    this.triggerChangeDetection();
-  }
-
-  submitLogin(): void {
-    if (!this.loginUsername || !this.loginPassword) {
-      this.loginError = 'Identifiant et mot de passe sont requis.';
-      return;
-    }
-    this.loginLoading = true;
-    this.loginError = null;
-    this.triggerChangeDetection();
-
-    this.authService.login(this.loginUsername, this.loginPassword).subscribe({
-      next: () => {
-        this.currentUser = this.authService.getCurrentUser();
-        this.loginLoading = false;
-        this.showLoginModal = false;
-        this.loginPassword = '';
-        this.statistics = null;
-        this.showToast('success', 'Connecté',
-          `Bienvenue, ${this.currentUser?.username ?? 'utilisateur'} (${this.currentUser?.isAdmin ? 'Administrateur' : 'Voyageur'})`);
-        this.loadAllData();
-        this.triggerChangeDetection();
-      },
-      error: (err) => {
-        this.loginLoading = false;
-        if (err.status === 401) {
-          this.loginError = 'Identifiant ou mot de passe incorrect.';
-        } else {
-          this.loginError = 'Impossible de joindre Keycloak. Vérifiez que Docker est actif.';
         }
         this.triggerChangeDetection();
       }
@@ -425,7 +369,6 @@ export class BagagesComponent implements OnInit {
     this.filteredBagages = [];
     this.statistics = null;
     this.showToast('info', 'Déconnecté', 'Vous avez été déconnecté de la session.');
-    this.showLoginModal = true;
     this.triggerChangeDetection();
   }
 

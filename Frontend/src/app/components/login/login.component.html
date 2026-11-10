@@ -1,0 +1,166 @@
+<div class="login-page-container">
+  <div class="login-card">
+    
+    <!-- En-tête -->
+    <div class="login-header">
+      <div class="brand-badge">
+        <i class="pi pi-shield"></i>
+      </div>
+      <h2>Authentification SkyVoyage</h2>
+      <p class="subtitle">Sélectionnez un profil préconfiguré ou saisissez vos identifiants Keycloak IAM</p>
+    </div>
+
+    <!-- Bannière si déjà connecté -->
+    <div *ngIf="currentUser" class="active-session-banner">
+      <div class="session-info">
+        <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill text-warning' : 'pi-user text-primary'"></i>
+        <div>
+          <h4>Session active : <strong>{{ currentUser.username }}</strong></h4>
+          <span class="role-chip" [class.admin-chip]="currentUser.isAdmin">
+            {{ currentUser.isAdmin ? 'Administrateur (Accès Total)' : 'Voyageur (Consultation)' }}
+          </span>
+        </div>
+      </div>
+      <div class="session-actions">
+        <a routerLink="/voyages" class="btn btn-primary">
+          <i class="pi pi-compass"></i>
+          <span>Aller aux Voyages</span>
+        </a>
+        <a routerLink="/bagages" class="btn btn-outline">
+          <i class="pi pi-briefcase"></i>
+          <span>Aller aux Bagages</span>
+        </a>
+        <button class="btn btn-danger-outline" (click)="logout()">
+          <i class="pi pi-sign-out"></i>
+          <span>Déconnexion</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Alertes Feedback -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+    <div *ngIf="successMessage" class="alert alert-success">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ successMessage }}</span>
+    </div>
+
+    <!-- Section 1 : Connexion Rapide (2 Comptes Démonstration) -->
+    <div class="quick-login-section">
+      <div class="section-title">
+        <span>Connexion Rapide (Comptes de Démonstration)</span>
+      </div>
+      
+      <div class="quick-cards-grid">
+        <!-- Carte 1 : Administrateur -->
+        <div class="quick-card admin-card" (click)="loginAs('admin')">
+          <div class="card-top">
+            <div class="card-icon">
+              <i class="pi pi-shield"></i>
+            </div>
+            <span class="badge badge-admin">Rôle : ADMIN</span>
+          </div>
+          <h3>Compte Administrateur</h3>
+          <p class="card-desc">Gestion totale des offres, ajout/modification/suppression de voyages, tarification bagages, supervision et statistiques.</p>
+          <div class="credentials-hint">
+            <span>Identifiant : <code>admin</code></span>
+            <span>Mot de passe : <code>admin</code></span>
+          </div>
+          <button class="btn-action admin-btn" [disabled]="loading">
+            <i class="pi pi-lock-open"></i>
+            <span>Se connecter en tant qu'Admin</span>
+          </button>
+        </div>
+
+        <!-- Carte 2 : Voyageur -->
+        <div class="quick-card user-card" (click)="loginAs('voyageur')">
+          <div class="card-top">
+            <div class="card-icon">
+              <i class="pi pi-user"></i>
+            </div>
+            <span class="badge badge-user">Rôle : VOYAGEUR</span>
+          </div>
+          <h3>Compte Voyageur</h3>
+          <p class="card-desc">Consultation du catalogue tunisien en DT, recherche multi-critères, comparateur d'offres, réservation et suivi de bagages.</p>
+          <div class="credentials-hint">
+            <span>Identifiant : <code>voyageur</code></span>
+            <span>Mot de passe : <code>user</code></span>
+          </div>
+          <button class="btn-action user-btn" [disabled]="loading">
+            <i class="pi pi-sign-in"></i>
+            <span>Se connecter en tant que Voyageur</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Séparateur -->
+    <div class="divider">
+      <span>ou saisie manuelle des identifiants</span>
+    </div>
+
+    <!-- Section 2 : Formulaire de Connexion Manuel -->
+    <form class="login-form" (ngSubmit)="performLogin()">
+      <div class="form-group">
+        <label for="username">Identifiant Keycloak</label>
+        <div class="input-wrapper">
+          <i class="pi pi-user input-icon"></i>
+          <input
+            id="username"
+            type="text"
+            class="form-control"
+            placeholder="ex: admin ou voyageur"
+            [(ngModel)]="username"
+            name="username"
+            [disabled]="loading"
+            autocomplete="username"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrapper">
+          <i class="pi pi-lock input-icon"></i>
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            class="form-control"
+            placeholder="Mot de passe"
+            [(ngModel)]="password"
+            name="password"
+            [disabled]="loading"
+            autocomplete="current-password"
+            required
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+            title="Afficher/masquer le mot de passe"
+          >
+            <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-submit" [disabled]="loading">
+        <i class="pi" [ngClass]="loading ? 'pi-spin pi-spinner' : 'pi-sign-in'"></i>
+        <span>{{ loading ? 'Authentification en cours...' : 'Se connecter avec Keycloak' }}</span>
+      </button>
+    </form>
+
+    <!-- Pied de carte informatif -->
+    <div class="login-footer">
+      <div class="keycloak-info">
+        <i class="pi pi-info-circle"></i>
+        <span>Serveur IAM Keycloak : <strong>http://localhost:8180</strong> • Realm : <strong>skyvoyage</strong></span>
+      </div>
+    </div>
+
+  </div>
+</div>
