@@ -1,0 +1,569 @@
+<div class="support-container">
+
+  <!-- Header & Titre -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-badge">
+        <span class="badge-dot pulse"></span>
+        <span>Support Client &bull; Symfony &amp; API Gateway</span>
+      </div>
+      <h1 class="page-title">
+        <i class="pi pi-comments text-primary"></i>
+        Centre de Support &amp; Réclamations
+      </h1>
+      <p class="page-subtitle">
+        Gestion et suivi des réclamations clients, litiges bagages et demandes d'assistance connectées à vos réservations.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadData()" [disabled]="loading" title="Rafraîchir les données">
+        <i class="pi pi-refresh" [class.pi-spin]="loading"></i>
+        <span>Actualiser</span>
+      </button>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <i class="pi pi-plus"></i>
+        <span>Nouvelle Réclamation</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Métriques / Statistiques Cards -->
+  <section class="stats-grid">
+    <div class="stat-card" [class.active-filter]="selectedStatus === 'ALL'" (click)="selectedStatus = 'ALL'; onFilterChange()">
+      <div class="stat-icon bg-primary-soft">
+        <i class="pi pi-inbox text-primary"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total Demandes</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="selectedStatus === 'EN_ATTENTE'" (click)="selectedStatus = 'EN_ATTENTE'; onFilterChange()">
+      <div class="stat-icon bg-warning-soft">
+        <i class="pi pi-clock text-warning"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.enAttente }}</span>
+        <span class="stat-label">En Attente</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="selectedStatus === 'EN_COURS'" (click)="selectedStatus = 'EN_COURS'; onFilterChange()">
+      <div class="stat-icon bg-info-soft">
+        <i class="pi pi-sync text-info"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.enCours }}</span>
+        <span class="stat-label">En Cours</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="selectedStatus === 'RESOLU'" (click)="selectedStatus = 'RESOLU'; onFilterChange()">
+      <div class="stat-icon bg-success-soft">
+        <i class="pi pi-check-circle text-success"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.resolu }}</span>
+        <span class="stat-label">Résolues</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="selectedStatus === 'FERME'" (click)="selectedStatus = 'FERME'; onFilterChange()">
+      <div class="stat-icon bg-slate-soft">
+        <i class="pi pi-lock text-secondary"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.ferme }}</span>
+        <span class="stat-label">Fermées</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barre de filtres et d'outils -->
+  <section class="card filter-card">
+    <div class="filters-row">
+      <!-- Recherche textuelle -->
+      <div class="filter-group search-group">
+        <label for="search-input">Recherche rapide</label>
+        <div class="input-with-icon">
+          <i class="pi pi-search"></i>
+          <input
+            id="search-input"
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="onFilterChange()"
+            placeholder="Sujet, mot-clé, catégorie, ID..."
+            class="form-control"
+          />
+          <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''; onFilterChange()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtre Statut -->
+      <div class="filter-group">
+        <label for="status-filter">Statut</label>
+        <select id="status-filter" [(ngModel)]="selectedStatus" (change)="onFilterChange()" class="form-control">
+          <option value="ALL">Tous les statuts</option>
+          <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+
+      <!-- Filtre par N° Réservation -->
+      <div class="filter-group small-group">
+        <label for="res-filter">N° Réservation</label>
+        <input
+          id="res-filter"
+          type="number"
+          [(ngModel)]="reservationFilter"
+          (input)="onFilterChange()"
+          placeholder="Ex: 104"
+          class="form-control"
+        />
+      </div>
+
+      <!-- Filtre par N° Client -->
+      <div class="filter-group small-group">
+        <label for="client-filter">N° Client</label>
+        <input
+          id="client-filter"
+          type="number"
+          [(ngModel)]="clientFilter"
+          (input)="onFilterChange()"
+          placeholder="Ex: 42"
+          class="form-control"
+        />
+      </div>
+
+      <!-- Réinitialiser -->
+      <div class="filter-actions">
+        <button class="btn btn-outline" (click)="resetFilters()" title="Réinitialiser tous les filtres">
+          <i class="pi pi-filter-slash"></i>
+          <span>Effacer</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tableau des Demandes -->
+  <section class="card table-card">
+    <div class="table-header-info">
+      <h3>
+        <i class="pi pi-list"></i>
+        Demandes de support
+        <span class="count-badge">{{ filteredRequests.length }}</span>
+      </h3>
+      <span class="backend-info-tag">
+        <i class="pi pi-database"></i>
+        API REST : Symfony / Gateway 8080
+      </span>
+    </div>
+
+    <!-- Spinner de chargement -->
+    <div *ngIf="loading" class="table-loading-state">
+      <i class="pi pi-spin pi-spinner text-primary"></i>
+      <p>Chargement des demandes de support...</p>
+    </div>
+
+    <!-- État vide -->
+    <div *ngIf="!loading && filteredRequests.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="pi pi-folder-open"></i>
+      </div>
+      <h4>Aucune demande trouvée</h4>
+      <p *ngIf="requests.length === 0">
+        Le tableau de bord est vide. Créez votre première réclamation client pour démarrer !
+      </p>
+      <p *ngIf="requests.length > 0">
+        Aucun résultat ne correspond à vos filtres de recherche.
+      </p>
+      <button *ngIf="requests.length === 0" class="btn btn-primary mt-3" (click)="openCreateModal()">
+        <i class="pi pi-plus"></i>
+        <span>Créer une demande</span>
+      </button>
+      <button *ngIf="requests.length > 0" class="btn btn-secondary mt-3" (click)="resetFilters()">
+        <i class="pi pi-filter-slash"></i>
+        <span>Réinitialiser les filtres</span>
+      </button>
+    </div>
+
+    <!-- Table de données -->
+    <div *ngIf="!loading && filteredRequests.length > 0" class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">Réf.</th>
+            <th>Sujet &amp; Description</th>
+            <th style="width: 170px;">Catégorie</th>
+            <th style="width: 160px;">Statut</th>
+            <th style="width: 140px;">Client / Résa</th>
+            <th style="width: 150px;">Date Création</th>
+            <th style="width: 130px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of filteredRequests">
+            <td class="ref-col">
+              <span class="badge-ticket">#{{ req.id }}</span>
+            </td>
+
+            <td class="subject-col">
+              <div class="ticket-subject" (click)="openDetailModal(req)">
+                {{ req.sujet }}
+              </div>
+              <div class="ticket-desc-preview">
+                {{ req.description }}
+              </div>
+            </td>
+
+            <td>
+              <span class="category-pill">
+                <i class="pi pi-tag"></i>
+                {{ req.categorie }}
+              </span>
+            </td>
+
+            <td>
+              <div class="status-cell">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(req.status)">
+                  <i [class]="getStatusIcon(req.status)"></i>
+                  {{ getStatusLabel(req.status) }}
+                </span>
+                <!-- Sélecteur rapide de statut -->
+                <select
+                  class="quick-status-select"
+                  [ngModel]="req.status"
+                  (ngModelChange)="onQuickStatusChange(req, $event)"
+                  title="Modifier le statut directement"
+                >
+                  <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+                </select>
+              </div>
+            </td>
+
+            <td>
+              <div class="association-meta">
+                <span *ngIf="req.reservationId" class="meta-tag res-tag" title="Réservation rattachée">
+                  <i class="pi pi-ticket"></i>
+                  Résa #{{ req.reservationId }}
+                </span>
+                <span *ngIf="req.clientId" class="meta-tag client-tag" title="Client demandeur">
+                  <i class="pi pi-user"></i>
+                  Client #{{ req.clientId }}
+                </span>
+                <span *ngIf="!req.reservationId && !req.clientId" class="text-muted text-xs">
+                  Non assigné
+                </span>
+              </div>
+            </td>
+
+            <td class="date-col">
+              <span class="date-main">
+                {{ req.dateCreation ? (req.dateCreation | date:'dd/MM/yyyy') : 'N/A' }}
+              </span>
+              <span class="date-sub">
+                {{ req.dateCreation ? (req.dateCreation | date:'HH:mm') : '' }}
+              </span>
+            </td>
+
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button class="action-btn btn-view" (click)="openDetailModal(req)" title="Voir les détails">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="action-btn btn-edit" (click)="openEditModal(req)" title="Modifier la demande">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="action-btn btn-delete" (click)="openDeleteModal(req)" title="Supprimer la demande">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- MODAL : CRÉER / MODIFIER UNE DEMANDE                     -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" *ngIf="showFormModal" (click)="closeFormModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-with-icon">
+          <div class="modal-icon-badge" [class.edit-badge]="isEditMode">
+            <i [class]="isEditMode ? 'pi pi-pencil' : 'pi pi-plus'"></i>
+          </div>
+          <div>
+            <h3>{{ isEditMode ? 'Modifier la Demande #' + editingId : 'Nouvelle Demande de Support' }}</h3>
+            <p class="modal-subtitle">
+              {{ isEditMode ? 'Mettez à jour les informations du ticket et son état d\'avancement.' : 'Enregistrez une nouvelle requête client ou réclamation bagage.' }}
+            </p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeFormModal()">&times;</button>
+      </div>
+
+      <form [formGroup]="requestForm" (ngSubmit)="onSubmit()">
+        <div class="modal-body">
+
+          <!-- Sujet -->
+          <div class="form-group">
+            <label for="modal-sujet">Sujet de la demande <span class="required">*</span></label>
+            <input
+              id="modal-sujet"
+              type="text"
+              formControlName="sujet"
+              placeholder="Ex: Bagage non reçu à l'arrivée du vol SK-402"
+              class="form-control"
+              [class.is-invalid]="requestForm.get('sujet')?.invalid && requestForm.get('sujet')?.touched"
+            />
+            <div class="invalid-feedback" *ngIf="requestForm.get('sujet')?.errors?.['required'] && requestForm.get('sujet')?.touched">
+              Le sujet est obligatoire.
+            </div>
+            <div class="invalid-feedback" *ngIf="requestForm.get('sujet')?.errors?.['minlength'] && requestForm.get('sujet')?.touched">
+              Le sujet doit comporter au moins 3 caractères.
+            </div>
+          </div>
+
+          <!-- Ligne Catégorie + Statut -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="modal-cat">Catégorie <span class="required">*</span></label>
+              <select id="modal-cat" formControlName="categorie" class="form-control">
+                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="modal-statut">Statut</label>
+              <select id="modal-statut" formControlName="status" class="form-control">
+                <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label for="modal-desc">Description détaillée <span class="required">*</span></label>
+            <textarea
+              id="modal-desc"
+              rows="4"
+              formControlName="description"
+              placeholder="Décrivez précisément l'incident, la réclamation, le numéro d'étiquette bagage, les circonstances..."
+              class="form-control"
+              [class.is-invalid]="requestForm.get('description')?.invalid && requestForm.get('description')?.touched"
+            ></textarea>
+            <div class="invalid-feedback" *ngIf="requestForm.get('description')?.errors?.['required'] && requestForm.get('description')?.touched">
+              La description détaillée est requise.
+            </div>
+            <div class="invalid-feedback" *ngIf="requestForm.get('description')?.errors?.['minlength'] && requestForm.get('description')?.touched">
+              La description doit comporter au moins 5 caractères.
+            </div>
+          </div>
+
+          <!-- Ligne Liens (Réservation, Client, Agent) -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="modal-resa">ID Réservation <span class="text-muted">(optionnel)</span></label>
+              <div class="input-with-icon">
+                <i class="pi pi-ticket"></i>
+                <input
+                  id="modal-resa"
+                  type="number"
+                  formControlName="reservationId"
+                  placeholder="Ex: 104"
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="modal-client">ID Client <span class="text-muted">(optionnel)</span></label>
+              <div class="input-with-icon">
+                <i class="pi pi-user"></i>
+                <input
+                  id="modal-client"
+                  type="number"
+                  formControlName="clientId"
+                  placeholder="Ex: 42"
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="modal-agent">ID Agent <span class="text-muted">(optionnel)</span></label>
+              <div class="input-with-icon">
+                <i class="pi pi-id-card"></i>
+                <input
+                  id="modal-agent"
+                  type="number"
+                  formControlName="agentId"
+                  placeholder="Ex: 7"
+                  class="form-control"
+                />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeFormModal()">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting">
+            <i class="pi pi-spin pi-spinner" *ngIf="submitting"></i>
+            <i class="pi pi-check" *ngIf="!submitting"></i>
+            <span>{{ isEditMode ? 'Enregistrer les modifications' : 'Créer la demande' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL : DÉTAIL D'UNE DEMANDE                             -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" *ngIf="showDetailModal && selectedRequest" (click)="closeDetailModal()">
+    <div class="modal-card modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-with-icon">
+          <div class="modal-icon-badge">
+            <i class="pi pi-info-circle"></i>
+          </div>
+          <div>
+            <h3>Détails du Ticket #{{ selectedRequest.id }}</h3>
+            <span class="status-badge mt-1" [ngClass]="getStatusBadgeClass(selectedRequest.status)">
+              <i [class]="getStatusIcon(selectedRequest.status)"></i>
+              {{ getStatusLabel(selectedRequest.status) }}
+            </span>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeDetailModal()">&times;</button>
+      </div>
+
+      <div class="modal-body detail-body">
+        <div class="detail-field">
+          <label>Sujet :</label>
+          <div class="detail-value font-semibold">{{ selectedRequest.sujet }}</div>
+        </div>
+
+        <div class="detail-field">
+          <label>Catégorie :</label>
+          <div class="detail-value">
+            <span class="category-pill">
+              <i class="pi pi-tag"></i>
+              {{ selectedRequest.categorie }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-field">
+          <label>Description :</label>
+          <div class="detail-value desc-box">
+            {{ selectedRequest.description }}
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-grid-item">
+            <span class="item-lbl">ID Réservation</span>
+            <span class="item-val font-semibold">{{ selectedRequest.reservationId || 'Non spécifié' }}</span>
+          </div>
+          <div class="detail-grid-item">
+            <span class="item-lbl">ID Client</span>
+            <span class="item-val font-semibold">{{ selectedRequest.clientId || 'Non spécifié' }}</span>
+          </div>
+          <div class="detail-grid-item">
+            <span class="item-lbl">ID Agent Traitant</span>
+            <span class="item-val font-semibold">{{ selectedRequest.agentId || 'Non assigné' }}</span>
+          </div>
+          <div class="detail-grid-item">
+            <span class="item-lbl">Date de création</span>
+            <span class="item-val">{{ selectedRequest.dateCreation ? (selectedRequest.dateCreation | date:'dd/MM/yyyy HH:mm:ss') : 'N/A' }}</span>
+          </div>
+          <div class="detail-grid-item">
+            <span class="item-lbl">Dernière mise à jour</span>
+            <span class="item-val">{{ selectedRequest.dateMiseAJour ? (selectedRequest.dateMiseAJour | date:'dd/MM/yyyy HH:mm:ss') : 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDetailModal()">
+          Fermer
+        </button>
+        <button class="btn btn-outline" (click)="closeDetailModal(); openEditModal(selectedRequest)">
+          <i class="pi pi-pencil"></i>
+          <span>Modifier</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL : CONFIRMATION SUPPRESSION                         -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" *ngIf="showDeleteModal && requestToDelete" (click)="closeDeleteModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-with-icon">
+          <div class="modal-icon-badge badge-danger-icon">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <div>
+            <h3>Confirmer la suppression</h3>
+            <p class="modal-subtitle">Cette action est irréversible.</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeDeleteModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p>
+          Êtes-vous sûr de vouloir supprimer définitivement la demande de support
+          <strong>#{{ requestToDelete.id }}</strong> (<em>{{ requestToDelete.sujet }}</em>) ?
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="deleting">
+          Annuler
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="deleting">
+          <i class="pi pi-spin pi-spinner" *ngIf="deleting"></i>
+          <i class="pi pi-trash" *ngIf="!deleting"></i>
+          <span>Supprimer</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TOAST NOTIFICATIONS                                      -->
+  <!-- ======================================================== -->
+  <div class="toast-container">
+    <div
+      *ngFor="let t of toasts"
+      class="toast-item"
+      [ngClass]="'toast-' + t.type"
+      (click)="removeToast(t.id)"
+    >
+      <div class="toast-icon">
+        <i [class]="t.type === 'success' ? 'pi pi-check-circle' : t.type === 'error' ? 'pi pi-times-circle' : 'pi pi-info-circle'"></i>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">{{ t.title }}</div>
+        <div class="toast-message">{{ t.message }}</div>
+      </div>
+      <button class="toast-close">&times;</button>
+    </div>
+  </div>
+
+</div>
