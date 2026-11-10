@@ -25,8 +25,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(modifiedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
-        // Token expiré ou absent : déconnexion propre de la session
+      // Déconnecter UNIQUEMENT si un token existait et est effectivement expiré
+      if (error.status === 401 && token && authService.isTokenExpired()) {
         authService.logout();
       }
       return throwError(() => error);

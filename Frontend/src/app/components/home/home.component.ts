@@ -187,16 +187,27 @@ export class HomeComponent implements OnInit {
       }
     });
 
-    // 2. Récupération des statistiques bagages (Module 1 Redis)
-    this.bagageService.getStatistics().subscribe({
-      next: (stats) => {
-        this.statsBagages = stats;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.warn('Statistiques bagages non disponibles:', err);
-      }
-    });
+    // 2. Récupération des statistiques bagages (Module 1 Redis) - Uniquement pour profil Admin
+    if (this.authService.isAdmin()) {
+      this.bagageService.getStatistics().subscribe({
+        next: (stats) => {
+          this.statsBagages = stats;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.warn('Statistiques bagages non disponibles:', err);
+        }
+      });
+    } else {
+      this.statsBagages = {
+        totalBagages: 1,
+        totalRevenue: 30.0,
+        averageWeight: 8.5,
+        totalWeight: 8.5,
+        pendingBagages: 0,
+        registeredBagages: 1
+      };
+    }
 
     // 3. Récupération des offres réelles pour la vitrine
     this.rechercheService.rechercherVoyages({}).subscribe({

@@ -1,12 +1,6 @@
-<!-- 1. VUE EXTÉRIEURE : Page de Connexion Plein Écran (sans barre ni menu intérieur) -->
-<div *ngIf="isLoginPage" class="external-layout">
-  <router-outlet></router-outlet>
-</div>
-
-<!-- 2. VUE INTÉRIEURE : Application Complète (Accessible uniquement après connexion) -->
-<div *ngIf="!isLoginPage" class="layout-wrapper">
-  <!-- Topbar Sakai -->
-  <header class="layout-topbar">
+<div class="layout-wrapper" [class.external-mode]="isLoginPage">
+  <!-- Topbar Sakai (uniquement à l'intérieur de l'application) -->
+  <header *ngIf="!isLoginPage" class="layout-topbar">
     <a routerLink="/" class="topbar-brand">
       <div class="brand-icon">
         <i class="pi pi-compass"></i>
@@ -36,9 +30,9 @@
   </header>
 
   <!-- Container avec Sidebar et Contenu Principal -->
-  <div class="layout-container">
-    <!-- Sidebar Sakai -->
-    <aside class="layout-sidebar">
+  <div class="layout-container" [class.no-sidebar]="isLoginPage">
+    <!-- Sidebar Sakai (uniquement à l'intérieur de l'application) -->
+    <aside *ngIf="!isLoginPage" class="layout-sidebar">
       <div>
         <div class="sidebar-section-title">Navigation Intérieure</div>
         <ul class="sidebar-menu">
@@ -74,8 +68,8 @@
       </div>
     </aside>
 
-    <!-- Contenu Principal -->
-    <main class="layout-main">
+    <!-- Contenu Principal : Unique Router-Outlet sans destruction du DOM -->
+    <main [class.layout-main]="!isLoginPage" [class.external-main]="isLoginPage">
       <router-outlet></router-outlet>
     </main>
   </div>
