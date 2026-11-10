@@ -44,7 +44,8 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
       SPRING_DATA_REDIS_HOST: redis
-    depends_on: [eureka, redis]
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/skyvoyage/protocol/openid-connect/certs
+    depends_on: [eureka, redis, keycloak]
 
   reservation-paiement:
     build: ./module4-reservation-paiement
