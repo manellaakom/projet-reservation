@@ -16,6 +16,61 @@
   </div>
 </div>
 
+<!-- Modal Connexion Keycloak -->
+<div *ngIf="showLoginModal" class="modal-backdrop" (click)="closeLoginModal()">
+  <div class="modal-dialog login-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="login-brand">
+        <i class="pi pi-shield"></i>
+        <h3>Connexion SkyVoyage</h3>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="login-subtitle">Authentifiez-vous avec votre compte Keycloak (realm : <strong>skyvoyage</strong>)</p>
+      <div class="form-group">
+        <label class="form-label">Identifiant</label>
+        <div class="input-wrapper">
+          <i class="pi pi-user input-icon"></i>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="ex: admin ou voyageur"
+            [(ngModel)]="loginUsername"
+            [disabled]="loginLoading"
+            (keyup.enter)="submitLogin()"
+            autocomplete="username"
+          />
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 1rem;">
+        <label class="form-label">Mot de passe</label>
+        <div class="input-wrapper">
+          <i class="pi pi-lock input-icon"></i>
+          <input
+            type="password"
+            class="form-control"
+            placeholder="Mot de passe"
+            [(ngModel)]="loginPassword"
+            [disabled]="loginLoading"
+            (keyup.enter)="submitLogin()"
+            autocomplete="current-password"
+          />
+        </div>
+      </div>
+      <div *ngIf="loginError" class="login-error">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ loginError }}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary login-btn" (click)="submitLogin()" [disabled]="loginLoading">
+        <i class="pi" [ngClass]="loginLoading ? 'pi-spin pi-spinner' : 'pi-sign-in'"></i>
+        <span>{{ loginLoading ? 'Connexion...' : 'Se connecter' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Header de la vue -->
 <div class="view-header">
   <div>
@@ -23,12 +78,25 @@
     <p class="view-subtitle">Supervision, tarification automatique (30 / 50 / 70 DT) et persistance Redis via l'API Gateway</p>
   </div>
   <div class="view-actions">
-    <button class="btn btn-outline" (click)="openHistoryModal()" title="Consulter l'historique des opérations de la session">
+    <!-- Badge utilisateur connecté -->
+    <div *ngIf="currentUser" class="user-badge" [class.admin-badge]="currentUser.isAdmin">
+      <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill' : 'pi-user'"></i>
+      <span>{{ currentUser.username }}</span>
+      <span class="role-label">{{ currentUser.isAdmin ? 'Admin' : 'User' }}</span>
+      <button class="logout-btn" (click)="logout()" title="Se déconnecter">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+    <button *ngIf="!currentUser" class="btn btn-outline" (click)="openLoginModal()">
+      <i class="pi pi-sign-in"></i>
+      <span>Connexion</span>
+    </button>
+    <button *ngIf="isAdmin" class="btn btn-outline" (click)="openHistoryModal()" title="Consulter l'historique des opérations de la session">
       <i class="pi pi-history"></i>
       <span>Historique</span>
       <span *ngIf="operationsHistory.length > 0" class="badge-count">{{ operationsHistory.length }}</span>
     </button>
-    <button class="btn btn-secondary" (click)="exportToCsv()" [disabled]="filteredBagages.length === 0" title="Exporter les données filtrées au format CSV Excel">
+    <button *ngIf="isAdmin" class="btn btn-secondary" (click)="exportToCsv()" [disabled]="filteredBagages.length === 0" title="Exporter les données filtrées au format CSV Excel">
       <i class="pi pi-file-excel"></i>
       <span>Exporter CSV</span>
     </button>
@@ -36,7 +104,7 @@
       <i class="pi pi-refresh" [ngClass]="{'pi-spin': loading}"></i>
       <span>Actualiser</span>
     </button>
-    <button class="btn btn-primary" (click)="openCreateModal()">
+    <button *ngIf="isAdmin" class="btn btn-primary" (click)="openCreateModal()">
       <i class="pi pi-plus"></i>
       <span>Nouveau Bagage</span>
     </button>
@@ -54,8 +122,8 @@
   <button class="btn btn-outline" (click)="loadAllData()">Réessayer</button>
 </div>
 
-<!-- Cartes de Statistiques (Style Sakai PrimeNG) -->
-<div class="stat-grid">
+<!-- Cartes de Statistiques (Style Sakai PrimeNG) - Réservé aux Administrateurs -->
+<div class="stat-grid" *ngIf="isAdmin">
   <!-- 1. Total Bagages (Interactif : Affiche tous les bagages et réinitialise les filtres) -->
   <div
     class="stat-card interactive"
@@ -164,6 +232,17 @@
     </div>
     <div class="stat-icon-wrapper indigo">
       <i class="pi pi-sliders-h"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Bandeau d'information pour le compte Voyageur (Consultation seule) -->
+<div *ngIf="!isAdmin && currentUser" class="card user-consultation-banner">
+  <div class="consultation-info">
+    <i class="pi pi-user-check consultation-icon"></i>
+    <div>
+      <h4>Espace Voyageur — Mode Consultation</h4>
+      <p>Bienvenue <strong>{{ currentUser.username }}</strong>. Vous disposez d'un accès en <strong>lecture seule</strong> pour consulter la liste des bagages enregistrés, effectuer des recherches et des tris. Les actions d'ajout, de modification, de suppression et les statistiques financières sont réservées aux administrateurs.</p>
     </div>
   </div>
 </div>
@@ -335,16 +414,18 @@
           </td>
           <td class="text-right">
             <div class="action-buttons">
+              <!-- Toujours accessible pour tous : Voir détails du bagage -->
               <button type="button" class="btn-icon" (click)="openDetailModal(b)" title="Consulter la fiche bagage">
                 <i class="pi pi-eye"></i>
               </button>
-              <button type="button" class="btn-icon" (click)="openEditModal(b)" title="Modifier les informations">
+              <!-- Actions administratives : réservées aux administrateurs -->
+              <button *ngIf="isAdmin" type="button" class="btn-icon" (click)="openEditModal(b)" title="Modifier les informations">
                 <i class="pi pi-pencil"></i>
               </button>
-              <button type="button" class="btn-icon link" (click)="openAssociateModal(b)" title="Associer à un dossier réservation">
+              <button *ngIf="isAdmin" type="button" class="btn-icon link" (click)="openAssociateModal(b)" title="Associer à un dossier réservation">
                 <i class="pi pi-link"></i>
               </button>
-              <button type="button" class="btn-icon delete" (click)="openDeleteModal(b)" title="Supprimer ce bagage">
+              <button *ngIf="isAdmin" type="button" class="btn-icon delete" (click)="openDeleteModal(b)" title="Supprimer ce bagage">
                 <i class="pi pi-trash"></i>
               </button>
             </div>
@@ -568,10 +649,10 @@
 
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeDetailModal()">Fermer</button>
-      <button type="button" class="btn btn-outline" (click)="openAssociateFromDetail()">
+      <button *ngIf="isAdmin" type="button" class="btn btn-outline" (click)="openAssociateFromDetail()">
         <i class="pi pi-link"></i> Associer réservation
       </button>
-      <button type="button" class="btn btn-primary" (click)="closeDetailModal(); openEditModal(selectedBagage)">
+      <button *ngIf="isAdmin" type="button" class="btn btn-primary" (click)="closeDetailModal(); openEditModal(selectedBagage)">
         <i class="pi pi-pencil"></i> Modifier ce bagage
       </button>
     </div>
