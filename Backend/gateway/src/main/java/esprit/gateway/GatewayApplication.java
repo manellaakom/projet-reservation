@@ -22,32 +22,38 @@ public class GatewayApplication {
 
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
+        String defaultHost = System.getenv().getOrDefault("GATEWAY_TARGET_HOST", "host.docker.internal");
+        String rechercheUri = System.getenv().getOrDefault("RECHERCHE_URI", "http://" + defaultHost + ":8082");
+        String bagagesUri = System.getenv().getOrDefault("BAGAGES_URI", "http://" + defaultHost + ":8081");
+        String paiementsUri = System.getenv().getOrDefault("PAIEMENTS_URI", "http://" + defaultHost + ":8084");
+        String supportUri = System.getenv().getOrDefault("SUPPORT_URI", "http://" + defaultHost + ":8000");
+
         return builder.routes()
                 .route("root", route -> route.path("/")
                         .filters(f -> f.redirect(302, "/api/recherche/voyages"))
-                        .uri("http://localhost:8082"))
+                        .uri(rechercheUri))
                 .route("swagger", route -> route.path("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
-                        .uri("http://localhost:8082"))
+                        .uri(rechercheUri))
                 .route("recherche", route -> route.path("/api/recherche/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
-                        .uri("http://localhost:8082"))
+                        .uri(rechercheUri))
                 .route("bagages", route -> route.path("/api/bagages/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
-                        .uri("http://localhost:8081"))
+                        .uri(bagagesUri))
                 .route("paiements", route -> route.path("/api/paiements/**", "/mock-paymee/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
-                        .uri("http://localhost:8084"))
+                        .uri(paiementsUri))
                 .route("reservations", route -> route.path("/api/v1/**")
-                        .uri("http://localhost:8003"))
+                        .uri("http://" + defaultHost + ":8003"))
                 .route("support", route -> route.path("/support/**", "/api/support-requests/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
-                        .uri("http://localhost:8000"))
+                        .uri(supportUri))
                 .build();
     }
 
