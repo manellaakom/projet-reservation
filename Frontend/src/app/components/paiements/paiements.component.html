@@ -1,0 +1,309 @@
+<div class="paiements-container">
+
+  <!-- En-tête -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-badge">
+        <span class="badge-dot pulse"></span>
+        <span>Module 4 &bull; Paiement en ligne Paymee &amp; Redis</span>
+      </div>
+      <h1 class="page-title">
+        <i class="pi pi-credit-card text-primary"></i>
+        Gestion des Paiements &amp; Transactions
+      </h1>
+      <p class="page-subtitle">
+        Suivi des règlements financiers, encaissement par carte bancaire Paymee en Dinars Tunisiens (DT) et traçabilité Redis.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadPaiements()" [disabled]="loading" title="Rafraîchir les données">
+        <i class="pi pi-refresh" [class.pi-spin]="loading"></i>
+        <span>Actualiser</span>
+      </button>
+      <button class="btn btn-paymee" (click)="openOnlineCheckout()">
+        <i class="pi pi-shield"></i>
+        <span>Payer en ligne (Paymee)</span>
+      </button>
+      <button *ngIf="authService.isAdmin()" class="btn btn-primary" (click)="openCreateModal()">
+        <i class="pi pi-plus"></i>
+        <span>Enregistrer un Règlement</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Alertes -->
+  <div *ngIf="successMessage" class="alert success-alert">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage }}</span>
+    <button (click)="successMessage = ''">&times;</button>
+  </div>
+  <div *ngIf="errorMessage" class="alert error-alert">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ errorMessage }}</span>
+    <button (click)="errorMessage = ''">&times;</button>
+  </div>
+
+  <!-- Statistiques rapides -->
+  <section class="stats-grid">
+    <div class="stat-card" [class.active-filter]="statusFilter === 'Tous les statuts'" (click)="statusFilter = 'Tous les statuts'">
+      <div class="stat-icon bg-primary-soft">
+        <i class="pi pi-wallet text-primary"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ totalPaid | number:'1.2-2' }} DT</span>
+        <span class="stat-label">Volume Total Encaissé</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="statusFilter === 'Payé'" (click)="statusFilter = 'Payé'">
+      <div class="stat-icon bg-success-soft">
+        <i class="pi pi-check-circle text-success"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ paiements.length }}</span>
+        <span class="stat-label">Total Transactions</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active-filter]="statusFilter === 'En attente'" (click)="statusFilter = 'En attente'">
+      <div class="stat-icon bg-warning-soft">
+        <i class="pi pi-clock text-warning"></i>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ pendingCount }}</span>
+        <span class="stat-label">En Attente de Règlement</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filtres et Recherche -->
+  <section class="card filter-card">
+    <div class="filters-row">
+      <div class="filter-group search-group">
+        <label for="search-input">Recherche rapide</label>
+        <div class="input-with-icon">
+          <i class="pi pi-search"></i>
+          <input
+            id="search-input"
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="Référence, ID transaction, statut..."
+            class="form-control"
+          />
+          <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="status-filter">Statut du Paiement</label>
+        <select id="status-filter" [(ngModel)]="statusFilter" class="form-control">
+          <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-outline" (click)="searchTerm = ''; statusFilter = 'Tous les statuts'">
+          <i class="pi pi-filter-slash"></i>
+          <span>Effacer</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tableau des paiements -->
+  <section class="card table-card">
+    <div *ngIf="loading" class="state-container">
+      <i class="pi pi-spin pi-spinner text-primary text-3xl"></i>
+      <p>Chargement des règlements...</p>
+    </div>
+
+    <div *ngIf="!loading && filteredPaiements.length === 0" class="state-container">
+      <i class="pi pi-inbox text-slate text-3xl"></i>
+      <h3>Aucun paiement trouvé</h3>
+      <p>Aucune transaction ne correspond à vos filtres de recherche.</p>
+    </div>
+
+    <div *ngIf="!loading && filteredPaiements.length > 0" class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID Transaction</th>
+            <th>Référence Réservation</th>
+            <th>Date &amp; Heure</th>
+            <th>Montant</th>
+            <th>Type</th>
+            <th>Statut</th>
+            <th *ngIf="authService.isAdmin()" class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filteredPaiements">
+            <td>
+              <span class="mono-id">{{ p.id }}</span>
+            </td>
+            <td>
+              <span class="ref-badge">{{ p.reference }}</span>
+            </td>
+            <td>
+              {{ p.datePaiement | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+            <td>
+              <strong class="amount-value">{{ p.montant | number:'1.2-2' }} DT</strong>
+            </td>
+            <td>
+              <span class="type-badge" [class.online]="p.paiementEnLigne">
+                <i class="pi" [ngClass]="p.paiementEnLigne ? 'pi-globe text-primary' : 'pi-building text-slate'"></i>
+                {{ p.paiementEnLigne ? 'Paymee en ligne' : 'Comptoir / Guichet' }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="statusClass(p.statut)">
+                <span class="dot"></span>
+                {{ p.statut }}
+              </span>
+            </td>
+            <td *ngIf="authService.isAdmin()" class="text-right">
+              <div class="row-actions">
+                <button class="icon-btn edit-btn" (click)="openEditModal(p)" title="Modifier">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="icon-btn delete-btn" (click)="deletePaiement(p)" title="Supprimer">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <span>{{ filteredPaiements.length }} transaction(s) affichée(s)</span>
+      <span>Stockage Redis &bull; Microservice Port 8084 via Gateway :8080</span>
+    </div>
+  </section>
+
+  <!-- MODAL : Enregistrer / Modifier un Paiement -->
+  <div *ngIf="modalOpen" class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingPaiement ? 'Modifier le Paiement' : 'Enregistrer un Paiement' }}</h3>
+        <button class="close-btn" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div *ngIf="modalErrorMessage" class="alert error-alert">
+        {{ modalErrorMessage }}
+      </div>
+
+      <form (ngSubmit)="savePaiement()">
+        <div class="form-group">
+          <label>Référence Réservation / Billet <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="form.reference" name="reference" class="form-control" placeholder="Ex: RES-TUN-2026-001" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Montant (DT) <span class="required">*</span></label>
+            <input type="number" [(ngModel)]="form.montant" name="montant" class="form-control" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select [(ngModel)]="form.statut" name="statut" class="form-control">
+              <option value="Payé">Payé</option>
+              <option value="En attente">En attente</option>
+              <option value="Échoué">Échoué</option>
+              <option value="Remboursé">Remboursé</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Date et Heure du Règlement</label>
+          <input type="datetime-local" [(ngModel)]="form.datePaiement" name="datePaiement" class="form-control" required />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving">
+            <i class="pi pi-check" *ngIf="!saving"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="saving"></i>
+            <span>{{ editingPaiement ? 'Mettre à jour' : 'Enregistrer' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL : Checkout Paymee en Ligne -->
+  <div *ngIf="onlineCheckoutOpen" class="modal-backdrop" (click)="closeOnlineCheckout()">
+    <div class="modal-card checkout-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <span class="paymee-pill">Passerelle Sécurisée</span>
+          <h3>Paiement en ligne Paymee</h3>
+        </div>
+        <button class="close-btn" (click)="closeOnlineCheckout()">&times;</button>
+      </div>
+
+      <p class="modal-desc">
+        Réglez votre réservation par carte bancaire via la passerelle nationale tunisienne Paymee.
+      </p>
+
+      <div *ngIf="modalErrorMessage" class="alert error-alert">
+        {{ modalErrorMessage }}
+      </div>
+
+      <form (ngSubmit)="startOnlineCheckout()">
+        <div class="form-group">
+          <label>Référence Réservation <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="checkoutForm.reference" name="chkReference" class="form-control" placeholder="Ex: RES-2026-001" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Montant à payer (DT) <span class="required">*</span></label>
+            <input type="number" [(ngModel)]="checkoutForm.montant" name="chkMontant" class="form-control" min="0.01" step="0.01" placeholder="0.00" required />
+          </div>
+          <div class="form-group">
+            <label>N° Téléphone <span class="required">*</span></label>
+            <input type="tel" [(ngModel)]="checkoutForm.phone" name="chkPhone" class="form-control" placeholder="+216 98 000 000" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prénom <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="checkoutForm.firstName" name="chkFirstName" class="form-control" placeholder="Prénom" required />
+          </div>
+          <div class="form-group">
+            <label>Nom <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="checkoutForm.lastName" name="chkLastName" class="form-control" placeholder="Nom" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Adresse E-mail <span class="required">*</span></label>
+          <input type="email" [(ngModel)]="checkoutForm.email" name="chkEmail" class="form-control" placeholder="client@skyvoyage.tn" required />
+        </div>
+
+        <div class="secure-badge-box">
+          <i class="pi pi-lock text-success"></i>
+          <span>Paiement 3D-Secure crypté &bull; Sandbox Paymee Tunisie</span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeOnlineCheckout()">Annuler</button>
+          <button type="submit" class="btn btn-paymee" [disabled]="startingCheckout">
+            <i class="pi pi-arrow-right" *ngIf="!startingCheckout"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="startingCheckout"></i>
+            <span>{{ startingCheckout ? 'Redirection Paymee...' : 'Continuer vers Paymee' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>

@@ -9,6 +9,6 @@ public record PaiementResponse(
         LocalDateTime datePaiement,
         String statut,
         String reference,
-        String transactionId
+        boolean paiementEnLigne
 ) {
 }
