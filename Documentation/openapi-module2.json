@@ -1,0 +1,1010 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "API Module 2 — Gestion, Recherche & Sécurité JWT des Voyages",
+    "description": "Microservice dédié à la gestion unique de l'entité Voyage : CRUD complet, recherche multi-critères, filtres avancés, tri, comparateur d'offres, suggestions intelligentes, Feign, RabbitMQ et Sécurité JWT.",
+    "contact": {
+      "name": "Équipe Projet Réservation - Module 2",
+      "email": "recherche@travel-reservation.tn"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8082",
+      "description": "Serveur Local Direct (Port 8082)"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Via API Gateway (Port 8080)"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sécurité & Authentification Keycloak / JWT",
+      "description": "Gestion de l'authentification Keycloak (realm: travel-realm), génération de tokens et contrôle RBAC"
+    },
+    {
+      "name": "Module 2 — Gestion & Recherche des Voyages",
+      "description": "Microservice de gestion unique de l'entité Voyage : CRUD complet, recherche multi-critères, filtres, tri et suggestions"
+    },
+    {
+      "name": "Communications Inter-Microservices (Feign & RabbitMQ)",
+      "description": "Démonstrations des communications synchrones OpenFeign et asynchrones RabbitMQ (Note 4)"
+    }
+  ],
+  "paths": {
+    "/api/recherche/voyages/{id}": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "3. [READ ONE] Consulter les détails d'un voyage par son ID",
+        "operationId": "consulterVoyage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoyageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "4. [UPDATE] Modifier une offre de voyage existante",
+        "operationId": "modifierVoyage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoyageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoyageResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "5. [DELETE] Supprimer une offre de voyage",
+        "operationId": "supprimerVoyage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/recherche/voyages": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "2. [READ ALL / SEARCH] Rechercher, filtrer et trier les voyages",
+        "operationId": "rechercherVoyages",
+        "parameters": [
+          {"name": "motCle", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "villeDepart", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "villeDestination", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "paysDestination", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "compagnie", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "typeTransport", "in": "query", "required": false, "schema": {"type": "string", "enum": ["VOL","TRAIN","BUS","BATEAU","SEJOUR_PACK"]}},
+          {"name": "categorie", "in": "query", "required": false, "schema": {"type": "string", "enum": ["ECONOMIQUE","CONFORT","PREMIUM","LUXE","PROMO"]}},
+          {"name": "dateDepartMin", "in": "query", "required": false, "schema": {"type": "string", "format": "date"}},
+          {"name": "dateDepartMax", "in": "query", "required": false, "schema": {"type": "string", "format": "date"}},
+          {"name": "prixMin", "in": "query", "required": false, "schema": {"type": "number"}},
+          {"name": "prixMax", "in": "query", "required": false, "schema": {"type": "number"}},
+          {"name": "dureeMaxMinutes", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32"}},
+          {"name": "volDirectUniquement", "in": "query", "required": false, "schema": {"type": "boolean"}},
+          {"name": "enPromotionUniquement", "in": "query", "required": false, "schema": {"type": "boolean"}},
+          {"name": "bagageSouteInclus", "in": "query", "required": false, "schema": {"type": "boolean"}},
+          {"name": "annulationGratuite", "in": "query", "required": false, "schema": {"type": "boolean"}},
+          {"name": "placesMin", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32"}},
+          {"name": "noteMin", "in": "query", "required": false, "schema": {"type": "number", "format": "double"}},
+          {"name": "sortBy", "in": "query", "required": false, "schema": {"type": "string", "default": "prix"}},
+          {"name": "sortDir", "in": "query", "required": false, "schema": {"type": "string", "default": "asc"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VoyageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "1. [CREATE] Créer une nouvelle offre de voyage",
+        "operationId": "creerVoyage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoyageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoyageResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/recherche/voyages/search": {
+      "post": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Rechercher et filtrer les voyages via un corps JSON",
+        "operationId": "rechercherVoyagesPost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CritereRechercheRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VoyageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/rabbitmq/publier-reservation": {
+      "post": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "RabbitMQ 1 : Publier un événement de réservation (Décrémente les places et booste la popularité)",
+        "operationId": "simulerReservation",
+        "parameters": [
+          {"name": "voyageId", "in": "query", "required": false, "schema": {"type": "integer", "format": "int64", "default": 1}},
+          {"name": "nombrePlaces", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32", "default": 2}},
+          {"name": "emailClient", "in": "query", "required": false, "schema": {"type": "string", "default": "client@esprit.tn"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/rabbitmq/publier-promotion": {
+      "post": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "RabbitMQ 3 : Publier une promotion flash (Topic exchange broadcast)",
+        "operationId": "simulerPromotion",
+        "parameters": [
+          {"name": "voyageId", "in": "query", "required": false, "schema": {"type": "integer", "format": "int64", "default": 1}},
+          {"name": "titre", "in": "query", "required": false, "schema": {"type": "string", "default": "Vente Flash Tunis-Paris"}},
+          {"name": "ancienPrix", "in": "query", "required": false, "schema": {"type": "number", "default": 450.0}},
+          {"name": "nouveauPrix", "in": "query", "required": false, "schema": {"type": "number", "default": 350.0}},
+          {"name": "pourcentageRemise", "in": "query", "required": false, "schema": {"type": "number", "format": "double", "default": 25.0}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/rabbitmq/publier-paiement": {
+      "post": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "RabbitMQ 2 : Publier un événement de confirmation de paiement (Validation asynchrone)",
+        "operationId": "simulerPaiement",
+        "parameters": [
+          {"name": "voyageId", "in": "query", "required": false, "schema": {"type": "integer", "format": "int64", "default": 1}},
+          {"name": "montant", "in": "query", "required": false, "schema": {"type": "number", "default": 250.0}},
+          {"name": "modePaiement", "in": "query", "required": false, "schema": {"type": "string", "default": "CARTE_BANCAIRE"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/comparer": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Comparer entre 2 et 5 offres de voyage côte-à-côte (ex: ?ids=1,2)",
+        "operationId": "comparerOffresGet",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparaisonResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Comparer des voyages via une liste d'IDs JSON",
+        "operationId": "comparerOffresPost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparaisonResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/register": {
+      "post": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Créer un nouveau compte utilisateur voyageur",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/login": {
+      "post": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Se connecter et obtenir un Token Keycloak/JWT (Utilisateur ou Administrateur)",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/keycloak/login": {
+      "post": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Connexion directe Keycloak OAuth2 (admin / voyageur)",
+        "operationId": "keycloakLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/voyages/{id}/places": {
+      "patch": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Mettre à jour les places disponibles après une réservation",
+        "operationId": "mettreAJourPlaces",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64"}},
+          {"name": "placesReservees", "in": "query", "required": false, "schema": {"type": "integer", "format": "int32", "default": 1}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/voyages/{id}/suggestions": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Obtenir des alternatives et suggestions similaires pour un voyage",
+        "operationId": "obtenirSuggestionsPourOffre",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/voyages/{id}/disponibilite": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Vérifier la disponibilité et le tarif d'un voyage",
+        "operationId": "verifierDisponibilite",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/voyages/statistiques": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Obtenir les statistiques du catalogue et les filtres disponibles",
+        "operationId": "getStatistiques",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatistiquesRechercheResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/statistiques": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Obtenir les statistiques du catalogue et les filtres disponibles",
+        "operationId": "getStatistiques_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatistiquesRechercheResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/suggestions": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Obtenir des suggestions intelligentes (tendances, promotions, petits budgets)",
+        "operationId": "obtenirSuggestionsGlobales",
+        "parameters": [
+          {"name": "villeDestination", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "budgetMax", "in": "query", "required": false, "schema": {"type": "number"}},
+          {"name": "typeTransport", "in": "query", "required": false, "schema": {"type": "string", "enum": ["VOL","TRAIN","BUS","BATEAU","SEJOUR_PACK"]}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/feign/synthese/{voyageId}": {
+      "get": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "Feign Synthèse : Agrégation multi-microservices pour une offre de voyage",
+        "operationId": "syntheseComplete",
+        "parameters": [
+          {"name": "voyageId", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/feign/paiements": {
+      "get": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "Feign 3 : Consulter l'état des paiements (Appel Module 4 Spring Boot)",
+        "operationId": "consulterPaiements",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/feign/disponibilite/{voyageId}": {
+      "get": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "Feign 1 : Vérifier la disponibilité en temps réel (Appel Module 3 FastAPI)",
+        "operationId": "verifierDisponibilite_1",
+        "parameters": [
+          {"name": "voyageId", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/inter-services/feign/bagages": {
+      "get": {
+        "tags": ["Communications Inter-Microservices (Feign & RabbitMQ)"],
+        "summary": "Feign 2 : Consulter les options et statistiques bagages (Appel Module 1 Spring Boot)",
+        "operationId": "consulterBagages",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/health": {
+      "get": {
+        "tags": ["Module 2 — Gestion & Recherche des Voyages"],
+        "summary": "Vérifier l'état de santé du microservice",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/verify": {
+      "get": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Vérifier la validité d'un token Keycloak ou JWT",
+        "operationId": "verify",
+        "parameters": [
+          {"name": "token", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/keycloak/demo-tokens": {
+      "get": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Tokens Keycloak de démonstration pour le jury / soutenance",
+        "operationId": "keycloakDemoTokens",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/keycloak/config": {
+      "get": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Afficher la configuration Keycloak (Realm, URL du serveur, Clients et Rôles)",
+        "operationId": "keycloakConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recherche/auth/demo-tokens": {
+      "get": {
+        "tags": ["Sécurité & Authentification Keycloak / JWT"],
+        "summary": "Tokens de test pré-générés (ADMIN & USER) à copier dans Swagger ou Postman",
+        "operationId": "demoTokens",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "VoyageRequest": {
+        "required": [
+          "categorie", "codeVoyage", "compagnie", "dateArrivee", "dateDepart",
+          "dureeMinutes", "paysDestination", "placesDisponibles", "prixBase",
+          "titre", "typeTransport", "villeDepart", "villeDestination"
+        ],
+        "type": "object",
+        "properties": {
+          "codeVoyage": {"type": "string"},
+          "titre": {"type": "string"},
+          "description": {"type": "string"},
+          "villeDepart": {"type": "string"},
+          "villeDestination": {"type": "string"},
+          "paysDestination": {"type": "string"},
+          "compagnie": {"type": "string"},
+          "typeTransport": {"type": "string", "enum": ["VOL","TRAIN","BUS","BATEAU","SEJOUR_PACK"]},
+          "categorie": {"type": "string", "enum": ["ECONOMIQUE","CONFORT","PREMIUM","LUXE","PROMO"]},
+          "dateDepart": {"type": "string", "format": "date-time"},
+          "dateArrivee": {"type": "string", "format": "date-time"},
+          "dureeMinutes": {"minimum": 15, "type": "integer", "format": "int32"},
+          "escales": {"type": "integer", "format": "int32"},
+          "prixBase": {"minimum": 1, "type": "number"},
+          "prixPromo": {"type": "number"},
+          "enPromotion": {"type": "boolean"},
+          "placesDisponibles": {"minimum": 0, "type": "integer", "format": "int32"},
+          "noteMoyenne": {"type": "number", "format": "double"},
+          "nombreAvis": {"type": "integer", "format": "int32"},
+          "bagageCabineInclus": {"type": "boolean"},
+          "bagageSouteInclus": {"type": "boolean"},
+          "annulationGratuite": {"type": "boolean"},
+          "repasInclus": {"type": "boolean"},
+          "wifiDisponible": {"type": "boolean"},
+          "imageUrl": {"type": "string"},
+          "statut": {"type": "string", "enum": ["DISPONIBLE","DERNIERES_PLACES","COMPLET","EXPIRE"]}
+        }
+      },
+      "VoyageResponse": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "format": "int64"},
+          "codeVoyage": {"type": "string"},
+          "titre": {"type": "string"},
+          "description": {"type": "string"},
+          "villeDepart": {"type": "string"},
+          "villeDestination": {"type": "string"},
+          "paysDestination": {"type": "string"},
+          "compagnie": {"type": "string"},
+          "typeTransport": {"type": "string", "enum": ["VOL","TRAIN","BUS","BATEAU","SEJOUR_PACK"]},
+          "categorie": {"type": "string", "enum": ["ECONOMIQUE","CONFORT","PREMIUM","LUXE","PROMO"]},
+          "dateDepart": {"type": "string", "format": "date-time"},
+          "dateArrivee": {"type": "string", "format": "date-time"},
+          "dureeMinutes": {"type": "integer", "format": "int32"},
+          "dureeFormatee": {"type": "string"},
+          "escales": {"type": "integer", "format": "int32"},
+          "prixBase": {"type": "number"},
+          "prixPromo": {"type": "number"},
+          "prixEffectif": {"type": "number"},
+          "pourcentageReduction": {"type": "integer", "format": "int32"},
+          "enPromotion": {"type": "boolean"},
+          "placesDisponibles": {"type": "integer", "format": "int32"},
+          "noteMoyenne": {"type": "number", "format": "double"},
+          "nombreAvis": {"type": "integer", "format": "int32"},
+          "nombreConsultations": {"type": "integer", "format": "int32"},
+          "bagageCabineInclus": {"type": "boolean"},
+          "bagageSouteInclus": {"type": "boolean"},
+          "annulationGratuite": {"type": "boolean"},
+          "repasInclus": {"type": "boolean"},
+          "wifiDisponible": {"type": "boolean"},
+          "imageUrl": {"type": "string"},
+          "statut": {"type": "string", "enum": ["DISPONIBLE","DERNIERES_PLACES","COMPLET","EXPIRE"]},
+          "scoreQualitePrix": {"type": "integer", "format": "int32"},
+          "badgesRecommandation": {"type": "array", "items": {"type": "string"}},
+          "avantagesCles": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "CritereRechercheRequest": {
+        "type": "object",
+        "properties": {
+          "motCle": {"type": "string"},
+          "villeDepart": {"type": "string"},
+          "villeDestination": {"type": "string"},
+          "paysDestination": {"type": "string"},
+          "compagnie": {"type": "string"},
+          "typeTransport": {"type": "string", "enum": ["VOL","TRAIN","BUS","BATEAU","SEJOUR_PACK"]},
+          "categorie": {"type": "string", "enum": ["ECONOMIQUE","CONFORT","PREMIUM","LUXE","PROMO"]},
+          "dateDepartMin": {"type": "string", "format": "date"},
+          "dateDepartMax": {"type": "string", "format": "date"},
+          "prixMin": {"type": "number"},
+          "prixMax": {"type": "number"},
+          "dureeMaxMinutes": {"type": "integer", "format": "int32"},
+          "volDirectUniquement": {"type": "boolean"},
+          "enPromotionUniquement": {"type": "boolean"},
+          "bagageSouteInclus": {"type": "boolean"},
+          "annulationGratuite": {"type": "boolean"},
+          "placesMin": {"type": "integer", "format": "int32"},
+          "noteMin": {"type": "number", "format": "double"},
+          "sortBy": {"type": "string"},
+          "sortDir": {"type": "string"}
+        }
+      },
+      "ComparaisonResponse": {
+        "type": "object",
+        "properties": {
+          "nombreOffresComparees": {"type": "integer", "format": "int32"},
+          "offreMoinsChereId": {"type": "integer", "format": "int64"},
+          "offreMoinsChereTitre": {"type": "string"},
+          "meilleurPrix": {"type": "number"},
+          "offrePlusRapideId": {"type": "integer", "format": "int64"},
+          "offrePlusRapideTitre": {"type": "string"},
+          "dureeMinimaleMinutes": {"type": "integer", "format": "int32"},
+          "offreMieuxNoteeId": {"type": "integer", "format": "int64"},
+          "offreMieuxNoteeTitre": {"type": "string"},
+          "meilleureNote": {"type": "number", "format": "double"},
+          "offreMeilleurRapportQualitePrixId": {"type": "integer", "format": "int64"},
+          "offreMeilleurRapportQualitePrixTitre": {"type": "string"},
+          "meilleurScoreQualitePrix": {"type": "integer", "format": "int32"},
+          "ecartPrixMax": {"type": "number"},
+          "ecartDureeMinutes": {"type": "integer", "format": "int32"},
+          "syntheseRecommandation": {"type": "string"},
+          "offresComparees": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}}
+        }
+      },
+      "SuggestionsResponse": {
+        "type": "object",
+        "properties": {
+          "contexteSuggestion": {"type": "string"},
+          "offresTendances": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}},
+          "meilleuresPromotions": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}},
+          "petitsBudgets": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}},
+          "offresSimilaires": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}},
+          "alternativesMoinsCheres": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}},
+          "meilleurRapportQualitePrix": {"type": "array", "items": {"$ref": "#/components/schemas/VoyageResponse"}}
+        }
+      },
+      "StatistiquesRechercheResponse": {
+        "type": "object",
+        "properties": {
+          "totalVoyages": {"type": "integer", "format": "int64"},
+          "totalOffresBillets": {"type": "integer", "format": "int64"},
+          "totalOffresEnPromotion": {"type": "integer", "format": "int64"},
+          "totalRecherchesEffectuees": {"type": "integer", "format": "int64"},
+          "totalConsultations": {"type": "integer", "format": "int64"},
+          "prixMinimumCatalogue": {"type": "number"},
+          "prixMaximumCatalogue": {"type": "number"},
+          "noteMoyenneGlobale": {"type": "number", "format": "double"},
+          "villesDepartDisponibles": {"type": "array", "items": {"type": "string"}},
+          "villesDestinationDisponibles": {"type": "array", "items": {"type": "string"}},
+          "paysDestinationDisponibles": {"type": "array", "items": {"type": "string"}},
+          "compagniesDisponibles": {"type": "array", "items": {"type": "string"}},
+          "repartitionParTypeTransport": {"type": "object", "additionalProperties": {"type": "integer", "format": "int64"}},
+          "repartitionParCategorie": {"type": "object", "additionalProperties": {"type": "integer", "format": "int64"}}
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "description": "Entrez votre Token JWT généré via /api/recherche/auth/login ou /api/recherche/auth/demo-tokens",
+        "name": "BearerAuth",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
