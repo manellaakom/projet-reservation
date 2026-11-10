@@ -22,11 +22,8 @@
     <h1 class="view-title">Catalogue & Recherche de Voyages</h1>
     <p class="view-subtitle">Recherche multi-critères, moteur de comparaison et suggestions personnalisées pour vos séjours.</p>
   </div>
+
   <div class="view-actions">
-    <button class="btn btn-outline" (click)="ouvrirAuthModal()" title="Connexion Administrateur">
-      <i class="pi pi-user"></i>
-      <span>Administration</span>
-    </button>
     <button class="btn btn-secondary" (click)="ouvrirComparateur()" [disabled]="selectedIdsForCompare.length < 2" title="Comparer côte-à-côte les offres sélectionnées">
       <i class="pi pi-sliders-h"></i>
       <span>Comparer</span>
@@ -56,7 +53,6 @@
     <small>Vérifiez que votre microservice tourne sur le port configuré (en natif sur le port <code>8082</code> ou dans Docker sur le port <code>9082</code>).</small>
   </div>
   <div class="banner-actions">
-    <button class="btn btn-sm btn-outline" (click)="ouvrirAuthModal()">Changer de Port</button>
     <button class="btn btn-sm btn-primary" (click)="lancerRecherche()">Réessayer</button>
   </div>
 </div>
@@ -604,46 +600,3 @@
   </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL 5 : CONFIGURATION JWT & PORTS MICROSERVICES       -->
-<!-- ======================================================== -->
-<div class="modal-overlay" *ngIf="showAuthModal">
-  <div class="modal-card">
-    <div class="modal-header">
-      <h2><i class="pi pi-shield text-primary"></i> Sécurité Keycloak & API Gateway</h2>
-      <button class="btn-close" (click)="showAuthModal = false"><i class="pi pi-times"></i></button>
-    </div>
-
-    <div class="modal-body">
-      <div style="background: rgba(30, 58, 138, 0.08); border: 1px solid #93c5fd; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #1e3a8a; margin-bottom: 0.25rem;">
-          <i class="pi pi-verified"></i> Passerelle API Gateway : <code>http://localhost:8080</code>
-        </div>
-        <div style="color: #3b82f6;">
-          Sécurité OAuth2 / OpenID Connect : <strong>Keycloak</strong> (Realm : <code>travel-realm</code>)
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Jeton d'accès (Token JWT Keycloak)</label>
-        <textarea [(ngModel)]="jwtTokenInput" rows="3" class="form-control font-mono" placeholder="Jeton d'authentification Bearer Keycloak..."></textarea>
-        <div class="btn-group-chips" style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          <button type="button" class="btn btn-xs btn-primary" (click)="connecterKeycloakAdmin()">
-            <i class="pi pi-lock"></i> Connexion Keycloak Admin
-          </button>
-          <button type="button" class="btn btn-xs btn-secondary" (click)="connecterKeycloakVoyageur()">
-            <i class="pi pi-user"></i> Connexion Keycloak Voyageur
-          </button>
-          <button type="button" class="btn btn-xs btn-outline-danger" (click)="deconnecter()">
-            <i class="pi pi-sign-out"></i> Déconnexion
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="showAuthModal = false">Fermer</button>
-      <button class="btn btn-primary" (click)="sauvegarderAuth()">Enregistrer</button>
-    </div>
-  </div>
-</div>
