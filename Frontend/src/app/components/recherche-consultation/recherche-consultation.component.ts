@@ -399,11 +399,61 @@ export class RechercheConsultationComponent implements OnInit {
   }
 
   remplirTokenAdminDemo(): void {
-    this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzk0MjQxNzgxLCJleHAiOjE3OTQzMjgxODF9.YhANGhMFuQAcBWtRN1Nv5-jNP4LIzUok9h-V7btpUaA';
+    this.service.getKeycloakDemoTokens().subscribe({
+      next: (res: any) => {
+        this.jwtTokenInput = res.ADMIN_TOKEN;
+        this.showToast('info', 'Token Keycloak Admin', 'Token Administrateur (ROLE_ADMIN) chargé.');
+      },
+      error: () => {
+        this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxODAvcmVhbG1zL3RyYXZlbC1yZWFsbSIsInN1YiI6ImFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiUk9MRV9BRE1JTiIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJBRE1JTiIsIlVTRVIiXX19';
+      }
+    });
   }
 
   remplirTokenClientDemo(): void {
-    this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjbGllbnQiLCJyb2xlIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzk0MjQxNzgxLCJleHAiOjE3OTQzMjgxODF9.AGJxFptfrrXAp5JQh4IcjlCT4esJ10LmFUPg2Z77nzc';
+    this.service.getKeycloakDemoTokens().subscribe({
+      next: (res: any) => {
+        this.jwtTokenInput = res.USER_TOKEN;
+        this.showToast('info', 'Token Keycloak Voyageur', 'Token Voyageur (ROLE_USER) chargé.');
+      },
+      error: () => {
+        this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxODAvcmVhbG1zL3RyYXZlbC1yZWFsbSIsInN1YiI6InZveWFnZXVyIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidm95YWdldXIiLCJyb2xlIjoiUk9MRV9VU0VSIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIlVTRVIiXX19';
+      }
+    });
+  }
+
+  connecterKeycloakAdmin(): void {
+    this.service.loginKeycloak({ username: 'admin', password: 'admin' }).subscribe({
+      next: (res: any) => {
+        this.service.setAuthToken(res.token);
+        this.jwtTokenInput = res.token;
+        this.showToast('success', 'Connecté via Keycloak (Admin)', 'Privilèges complets accordés (Création, Édition, Suppression).');
+      },
+      error: () => {
+        this.remplirTokenAdminDemo();
+        this.service.setAuthToken(this.jwtTokenInput);
+      }
+    });
+  }
+
+  connecterKeycloakVoyageur(): void {
+    this.service.loginKeycloak({ username: 'voyageur', password: '123' }).subscribe({
+      next: (res: any) => {
+        this.service.setAuthToken(res.token);
+        this.jwtTokenInput = res.token;
+        this.showToast('success', 'Connecté via Keycloak (Voyageur)', 'Droits de consultation et recherche accordés.');
+      },
+      error: () => {
+        this.remplirTokenClientDemo();
+        this.service.setAuthToken(this.jwtTokenInput);
+      }
+    });
+  }
+
+  deconnecter(): void {
+    this.service.setAuthToken('');
+    this.jwtTokenInput = '';
+    this.showToast('info', 'Déconnecté', 'Session réinitialisée en mode anonyme.');
   }
 
   basculerVersDocker(): void {

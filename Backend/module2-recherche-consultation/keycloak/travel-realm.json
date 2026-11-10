@@ -1,0 +1,101 @@
+{
+  "id": "travel-realm",
+  "realm": "travel-realm",
+  "displayName": "SkyVoyage Reservation Platform",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrateur avec privilèges CRUD complets sur les voyages"
+      },
+      {
+        "name": "USER",
+        "description": "Utilisateur voyageur avec droits de consultation et réservation"
+      }
+    ]
+  },
+  "groups": [],
+  "defaultRoles": [
+    "USER"
+  ],
+  "clients": [
+    {
+      "clientId": "travel-client",
+      "name": "Travel Reservation Client",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://localhost:8080/*",
+        "http://localhost:8082/*"
+      ],
+      "webOrigins": [
+        "*"
+      ]
+    },
+    {
+      "clientId": "gateway-service",
+      "name": "API Gateway Resource Server",
+      "enabled": true,
+      "bearerOnly": true
+    },
+    {
+      "clientId": "recherche-service",
+      "name": "Recherche Consultation Resource Server",
+      "enabled": true,
+      "bearerOnly": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "SkyVoyage",
+      "email": "admin@skyvoyage.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN",
+        "USER"
+      ]
+    },
+    {
+      "username": "voyageur",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Client",
+      "lastName": "Voyageur",
+      "email": "voyageur@skyvoyage.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "voyageur",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "USER"
+      ]
+    }
+  ]
+}
