@@ -1,74 +1,433 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RechercheConsultationService } from '../../services/recherche-consultation.service';
 import {
+  CategorieOffre,
   ComparaisonResponse,
   CritereRecherche,
-  OffreBillet,
+  StatistiquesCatalogue,
   SuggestionsResponse,
-  VoyageOffre
+  TypeTransport,
+  VoyageOffre,
+  VoyageRequestDTO
 } from '../../models/recherche.model';
-import { RechercheConsultationService } from '../../services/recherche-consultation.service';
+
+interface Toast {
+  id: number;
+  type: 'success' | 'error' | 'info';
+  title: string;
+  message: string;
+}
 
 @Component({
   selector: 'app-recherche-consultation',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './recherche-consultation.component.html',
-  styleUrls: ['./recherche-consultation.component.css']
+  styleUrls: ['./recherche-consultation.component.scss']
 })
 export class RechercheConsultationComponent implements OnInit {
   voyages: VoyageOffre[] = [];
-  billets: OffreBillet[] = [];
-  offreConsultee: VoyageOffre | null = null;
-  suggestionsOffre: SuggestionsResponse | null = null;
-  suggestionsGlobales: SuggestionsResponse | null = null;
-  comparaison: ComparaisonResponse | null = null;
-  idsSelectionnesComparaison: number[] = [];
+  statistiques: StatistiquesCatalogue | null = null;
+  loading: boolean = false;
+  error: string | null = null;
 
+  // Filtres de recherche
   criteres: CritereRecherche = {
+    motCle: '',
+    villeDepart: '',
+    villeDestination: '',
+    typeTransport: undefined,
+    categorie: undefined,
+    prixMax: undefined,
+    volDirectUniquement: false,
+    enPromotionUniquement: false,
+    bagageSouteInclus: false,
+    annulationGratuite: false,
     sortBy: 'prix',
-    sortDir: 'asc',
-    prixMax: 1800
+    sortDir: 'asc'
   };
 
-  constructor(private rechercheService: RechercheConsultationService) {}
+  // Comparateur
+  selectedIdsForCompare: number[] = [];
+  comparaisonResult: ComparaisonResponse | null = null;
+  showCompareModal: boolean = false;
+
+  // Suggestions
+  suggestionsResult: SuggestionsResponse | null = null;
+  showSuggestionsModal: boolean = false;
+
+  // Consultation détails
+  offreConsultee: VoyageOffre | null = null;
+  suggestionsOffre: SuggestionsResponse | null = null;
+  showDetailsModal: boolean = false;
+
+  // Modal Création / Modification
+  showFormModal: boolean = false;
+  isEditMode: boolean = false;
+  editingVoyageId: number | null = null;
+  voyageForm: FormGroup;
+
+  // Modal Configuration JWT & Backend
+  showAuthModal: boolean = false;
+  jwtTokenInput: string = '';
+  apiUrlInput: string = '';
+
+  // Toasts
+  toasts: Toast[] = [];
+
+  constructor(
+    private service: RechercheConsultationService,
+    private fb: FormBuilder
+  ) {
+    this.voyageForm = this.fb.group({
+      codeVoyage: ['', [Validators.required, Validators.maxLength(40)]],
+      titre: ['', [Validators.required, Validators.maxLength(160)]],
+      description: [''],
+      villeDepart: ['', Validators.required],
+      villeDestination: ['', Validators.required],
+      paysDestination: ['', Validators.required],
+      compagnie: ['', Validators.required],
+      typeTransport: ['VOL', Validators.required],
+      categorie: ['CONFORT', Validators.required],
+      dateDepart: ['', Validators.required],
+      dateArrivee: ['', Validators.required],
+      dureeMinutes: [120, [Validators.required, Validators.min(15)]],
+      escales: [0, [Validators.min(0)]],
+      prixBase: [250, [Validators.required, Validators.min(1)]],
+      prixPromo: [null],
+      enPromotion: [false],
+      placesDisponibles: [20, [Validators.required, Validators.min(0)]],
+      bagageCabineInclus: [true],
+      bagageSouteInclus: [false],
+      annulationGratuite: [false],
+      repasInclus: [false],
+      wifiDisponible: [false],
+      imageUrl: ['']
+    });
+  }
 
   ngOnInit(): void {
+    this.jwtTokenInput = this.service.getAuthToken();
+    this.apiUrlInput = this.service.getApiUrl();
     this.lancerRecherche();
-    this.chargerSuggestionsGlobales();
+    this.chargerStatistiques();
   }
 
+  // --- RECHERCHE ET CATALOGUE ---
   lancerRecherche(): void {
-    this.rechercheService.rechercherVoyages(this.criteres).subscribe(res => {
-      this.voyages = res;
+    this.loading = true;
+    this.error = null;
+
+    // Nettoyage des critères vides
+    const payload: CritereRecherche = { ...this.criteres };
+    if (!payload.motCle) delete payload.motCle;
+    if (!payload.villeDepart) delete payload.villeDepart;
+    if (!payload.villeDestination) delete payload.villeDestination;
+    if (!payload.typeTransport) delete payload.typeTransport;
+    if (!payload.categorie) delete payload.categorie;
+    if (!payload.prixMax) delete payload.prixMax;
+
+    this.service.rechercherVoyages(payload).subscribe({
+      next: (res: VoyageOffre[]) => {
+        this.voyages = res;
+        this.loading = false;
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.error = `Impossible de joindre le microservice sur ${this.service.getApiUrl()}. Vérifiez qu'il est bien démarré.`;
+        this.showToast('error', 'Erreur de connexion', this.error);
+      }
     });
   }
 
-  consulterOffre(id: number): void {
-    this.rechercheService.consulterVoyageParId(id).subscribe(offre => {
-      this.offreConsultee = offre;
-      this.rechercheService.obtenirSuggestionsPourOffre(id).subscribe(sugg => {
-        this.suggestionsOffre = sugg;
-      });
+  reinitialiserFiltres(): void {
+    this.criteres = {
+      motCle: '',
+      villeDepart: '',
+      villeDestination: '',
+      typeTransport: undefined,
+      categorie: undefined,
+      prixMax: undefined,
+      volDirectUniquement: false,
+      enPromotionUniquement: false,
+      bagageSouteInclus: false,
+      annulationGratuite: false,
+      sortBy: 'prix',
+      sortDir: 'asc'
+    };
+    this.lancerRecherche();
+  }
+
+  chargerStatistiques(): void {
+    this.service.getStatistiques().subscribe({
+      next: (stats: StatistiquesCatalogue) => {
+        this.statistiques = stats;
+      },
+      error: () => {}
     });
   }
 
-  basculerSelectionComparaison(id: number): void {
-    const index = this.idsSelectionnesComparaison.indexOf(id);
-    if (index >= 0) {
-      this.idsSelectionnesComparaison.splice(index, 1);
-    } else if (this.idsSelectionnesComparaison.length < 4) {
-      this.idsSelectionnesComparaison.push(id);
+  // --- DETAILS D'UN VOYAGE ---
+  consulterVoyage(id: number): void {
+    this.service.consulterVoyageParId(id).subscribe({
+      next: (offre: VoyageOffre) => {
+        this.offreConsultee = offre;
+        this.showDetailsModal = true;
+        this.service.obtenirSuggestionsPourOffre(id).subscribe({
+          next: (sugg: SuggestionsResponse) => {
+            this.suggestionsOffre = sugg;
+          }
+        });
+      },
+      error: (_err: any) => {
+        this.showToast('error', 'Erreur', 'Impossible de charger les détails du voyage.');
+      }
+    });
+  }
+
+  fermerDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.offreConsultee = null;
+    this.suggestionsOffre = null;
+  }
+
+  // --- COMPARATEUR D'OFFRES ---
+  toggleSelectCompare(id: number): void {
+    const idx = this.selectedIdsForCompare.indexOf(id);
+    if (idx >= 0) {
+      this.selectedIdsForCompare.splice(idx, 1);
+    } else {
+      if (this.selectedIdsForCompare.length >= 4) {
+        this.showToast('info', 'Limite atteinte', 'Vous pouvez comparer jusqu’à 4 offres à la fois.');
+        return;
+      }
+      this.selectedIdsForCompare.push(id);
     }
-    if (this.idsSelectionnesComparaison.length >= 2) {
-      this.rechercheService.comparerOffres(this.idsSelectionnesComparaison).subscribe(comp => {
-        this.comparaison = comp;
+  }
+
+  isSelectedForCompare(id: number): boolean {
+    return this.selectedIdsForCompare.includes(id);
+  }
+
+  ouvrirComparateur(): void {
+    if (this.selectedIdsForCompare.length < 2) {
+      this.showToast('info', 'Sélection requise', 'Veuillez cocher au moins 2 voyages pour les comparer.');
+      return;
+    }
+    this.service.comparerOffres(this.selectedIdsForCompare).subscribe({
+      next: (res: ComparaisonResponse) => {
+        this.comparaisonResult = res;
+        this.showCompareModal = true;
+      },
+      error: (_err: any) => {
+        this.showToast('error', 'Erreur', 'Impossible de comparer ces offres.');
+      }
+    });
+  }
+
+  fermerComparateur(): void {
+    this.showCompareModal = false;
+  }
+
+  // --- SUGGESTIONS INTELLIGENTES ---
+  ouvrirSuggestions(): void {
+    this.service.obtenirSuggestionsGlobales(this.criteres.villeDestination, this.criteres.prixMax).subscribe({
+      next: (res: SuggestionsResponse) => {
+        this.suggestionsResult = res;
+        this.showSuggestionsModal = true;
+      },
+      error: (_err: any) => {
+        this.showToast('error', 'Erreur', 'Impossible de charger les suggestions.');
+      }
+    });
+  }
+
+  fermerSuggestions(): void {
+    this.showSuggestionsModal = false;
+  }
+
+  // --- CRUD (CREER / MODIFIER / SUPPRIMER) ---
+  ouvrirModalCreation(): void {
+    this.isEditMode = false;
+    this.editingVoyageId = null;
+    this.voyageForm.reset({
+      codeVoyage: `VOY-${Date.now().toString().slice(-6)}`,
+      titre: '',
+      description: '',
+      villeDepart: 'Tunis',
+      villeDestination: '',
+      paysDestination: '',
+      compagnie: 'Tunisair',
+      typeTransport: 'VOL',
+      categorie: 'CONFORT',
+      dateDepart: new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 16),
+      dateArrivee: new Date(Date.now() + 86400000 * 7 + 7200000).toISOString().slice(0, 16),
+      dureeMinutes: 120,
+      escales: 0,
+      prixBase: 299,
+      prixPromo: null,
+      enPromotion: false,
+      placesDisponibles: 25,
+      bagageCabineInclus: true,
+      bagageSouteInclus: false,
+      annulationGratuite: false,
+      repasInclus: false,
+      wifiDisponible: false,
+      imageUrl: ''
+    });
+    this.showFormModal = true;
+  }
+
+  ouvrirModalModification(voyage: VoyageOffre): void {
+    this.isEditMode = true;
+    this.editingVoyageId = voyage.id;
+    this.voyageForm.patchValue({
+      codeVoyage: voyage.codeVoyage,
+      titre: voyage.titre,
+      description: voyage.description,
+      villeDepart: voyage.villeDepart,
+      villeDestination: voyage.villeDestination,
+      paysDestination: voyage.paysDestination,
+      compagnie: voyage.compagnie,
+      typeTransport: voyage.typeTransport,
+      categorie: voyage.categorie,
+      dateDepart: voyage.dateDepart ? voyage.dateDepart.slice(0, 16) : '',
+      dateArrivee: voyage.dateArrivee ? voyage.dateArrivee.slice(0, 16) : '',
+      dureeMinutes: voyage.dureeMinutes,
+      escales: voyage.escales,
+      prixBase: voyage.prixBase,
+      prixPromo: voyage.prixPromo,
+      enPromotion: voyage.enPromotion,
+      placesDisponibles: voyage.placesDisponibles,
+      bagageCabineInclus: voyage.bagageCabineInclus,
+      bagageSouteInclus: voyage.bagageSouteInclus,
+      annulationGratuite: voyage.annulationGratuite,
+      repasInclus: voyage.repasInclus,
+      wifiDisponible: voyage.wifiDisponible,
+      imageUrl: voyage.imageUrl
+    });
+    this.showFormModal = true;
+  }
+
+  fermerFormModal(): void {
+    this.showFormModal = false;
+    this.editingVoyageId = null;
+  }
+
+  sauvegarderVoyage(): void {
+    if (this.voyageForm.invalid) {
+      this.voyageForm.markAllAsTouched();
+      this.showToast('error', 'Formulaire incomplet', 'Veuillez vérifier les champs obligatoires.');
+      return;
+    }
+
+    const formVal = this.voyageForm.value;
+    const payload: VoyageRequestDTO = {
+      ...formVal,
+      dateDepart: new Date(formVal.dateDepart).toISOString().slice(0, 19),
+      dateArrivee: new Date(formVal.dateArrivee).toISOString().slice(0, 19)
+    };
+
+    if (this.isEditMode && this.editingVoyageId) {
+      this.service.modifierVoyage(this.editingVoyageId, payload).subscribe({
+        next: (res: VoyageOffre) => {
+          this.showToast('success', 'Modifié avec succès', `L'offre "${res.titre}" a été mise à jour.`);
+          this.fermerFormModal();
+          this.lancerRecherche();
+          this.chargerStatistiques();
+        },
+        error: (err: any) => {
+          const msg = err.status === 403 || err.status === 401
+            ? 'Accès refusé : token JWT manquant ou non autorisé. Renseignez un token dans "Configuration JWT".'
+            : err.error?.message || 'Erreur lors de la modification.';
+          this.showToast('error', 'Échec de modification', msg);
+        }
       });
     } else {
-      this.comparaison = null;
+      this.service.creerVoyage(payload).subscribe({
+        next: (res: VoyageOffre) => {
+          this.showToast('success', 'Créé avec succès', `L'offre "${res.titre}" a été enregistrée en base.`);
+          this.fermerFormModal();
+          this.lancerRecherche();
+          this.chargerStatistiques();
+        },
+        error: (err: any) => {
+          const msg = err.status === 403 || err.status === 401
+            ? 'Accès refusé : token JWT manquant ou invalide. Renseignez un token dans "Configuration JWT".'
+            : err.error?.message || 'Erreur lors de la création.';
+          this.showToast('error', 'Échec de création', msg);
+        }
+      });
     }
   }
 
-  chargerSuggestionsGlobales(destination?: string): void {
-    this.rechercheService.obtenirSuggestionsGlobales(destination, this.criteres.prixMax).subscribe(res => {
-      this.suggestionsGlobales = res;
+  supprimerVoyage(id: number, titre: string): void {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'offre "${titre}" ? (Réservé à ROLE_ADMIN)`)) {
+      return;
+    }
+
+    this.service.supprimerVoyage(id).subscribe({
+      next: () => {
+        this.showToast('success', 'Supprimé', `L'offre "${titre}" a été supprimée.`);
+        this.lancerRecherche();
+        this.chargerStatistiques();
+      },
+      error: (err: any) => {
+        const msg = err.status === 403
+          ? 'Action interdite : la suppression exige expressément le rôle ROLE_ADMIN. Renseignez le token Admin.'
+          : err.error?.message || 'Erreur lors de la suppression.';
+        this.showToast('error', 'Suppression impossible', msg);
+      }
     });
+  }
+
+  // --- GESTION TOKEN JWT & API URL ---
+  ouvrirAuthModal(): void {
+    this.jwtTokenInput = this.service.getAuthToken();
+    this.apiUrlInput = this.service.getApiUrl();
+    this.showAuthModal = true;
+  }
+
+  sauvegarderAuth(): void {
+    this.service.setAuthToken(this.jwtTokenInput);
+    this.service.setApiUrl(this.apiUrlInput);
+    this.showAuthModal = false;
+    this.showToast('success', 'Paramètres enregistrés', 'Token JWT et URL API mis à jour pour la session.');
+    this.lancerRecherche();
+  }
+
+  remplirTokenAdminDemo(): void {
+    this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzk0MjQxNzgxLCJleHAiOjE3OTQzMjgxODF9.YhANGhMFuQAcBWtRN1Nv5-jNP4LIzUok9h-V7btpUaA';
+  }
+
+  remplirTokenClientDemo(): void {
+    this.jwtTokenInput = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjbGllbnQiLCJyb2xlIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzk0MjQxNzgxLCJleHAiOjE3OTQzMjgxODF9.AGJxFptfrrXAp5JQh4IcjlCT4esJ10LmFUPg2Z77nzc';
+  }
+
+  basculerVersDocker(): void {
+    this.apiUrlInput = 'http://localhost:9082/api/recherche';
+  }
+
+  basculerVersNatif(): void {
+    this.apiUrlInput = 'http://localhost:8082/api/recherche';
+  }
+
+  basculerVersGateway(): void {
+    this.apiUrlInput = 'http://localhost:8080/api/recherche';
+  }
+
+  // --- TOASTS NOTIFICATIONS ---
+  showToast(type: 'success' | 'error' | 'info', title: string, message: string): void {
+    const id = Date.now();
+    this.toasts.push({ id, type, title, message });
+    setTimeout(() => {
+      this.closeToast(id);
+    }, 5000);
+  }
+
+  closeToast(id: number): void {
+    this.toasts = this.toasts.filter(t => t.id !== id);
   }
 }

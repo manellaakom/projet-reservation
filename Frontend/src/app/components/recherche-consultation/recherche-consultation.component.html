@@ -1,0 +1,647 @@
+<!-- Toast Notifications -->
+<div class="toast-container">
+  <div *ngFor="let t of toasts" class="toast" [ngClass]="'toast-' + t.type">
+    <i class="toast-icon pi" [ngClass]="{
+      'pi-check-circle': t.type === 'success',
+      'pi-exclamation-triangle': t.type === 'error',
+      'pi-info-circle': t.type === 'info'
+    }"></i>
+    <div class="toast-content">
+      <div class="toast-title">{{ t.title }}</div>
+      <div class="toast-message">{{ t.message }}</div>
+    </div>
+    <button class="toast-close" (click)="closeToast(t.id)">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Header de la vue -->
+<div class="view-header">
+  <div>
+    <h1 class="view-title">Catalogue & Recherche de Voyages</h1>
+    <p class="view-subtitle">Recherche multi-critères, moteur de comparaison, suggestions intelligentes et sécurité JWT (Module 2)</p>
+  </div>
+  <div class="view-actions">
+    <button class="btn btn-outline" (click)="ouvrirAuthModal()" title="Paramétrer votre Token JWT et basculer entre :8082, Docker :9082 ou Gateway">
+      <i class="pi pi-shield"></i>
+      <span>Sécurité JWT</span>
+    </button>
+    <button class="btn btn-secondary" (click)="ouvrirComparateur()" [disabled]="selectedIdsForCompare.length < 2" title="Comparer côte-à-côte les offres sélectionnées">
+      <i class="pi pi-sliders-h"></i>
+      <span>Comparer</span>
+      <span *ngIf="selectedIdsForCompare.length > 0" class="badge-count">{{ selectedIdsForCompare.length }}</span>
+    </button>
+    <button class="btn btn-secondary" (click)="ouvrirSuggestions()" title="Consulter les suggestions intelligentes du catalogue">
+      <i class="pi pi-sparkles"></i>
+      <span>Suggestions IA</span>
+    </button>
+    <button class="btn btn-secondary" (click)="lancerRecherche()" [disabled]="loading" title="Recharger les données">
+      <i class="pi pi-refresh" [ngClass]="{'pi-spin': loading}"></i>
+      <span>Actualiser</span>
+    </button>
+    <button class="btn btn-primary" (click)="ouvrirModalCreation()">
+      <i class="pi pi-plus"></i>
+      <span>Nouveau Voyage</span>
+    </button>
+  </div>
+</div>
+
+<!-- Erreur de connexion éventuelle -->
+<div *ngIf="error" class="card banner-error">
+  <i class="pi pi-exclamation-circle banner-icon"></i>
+  <div class="banner-body">
+    <h4>Communication microservice interrompue</h4>
+    <p>{{ error }}</p>
+    <small>Vérifiez que votre microservice tourne sur le port configuré (en natif sur le port <code>8082</code> ou dans Docker sur le port <code>9082</code>).</small>
+  </div>
+  <div class="banner-actions">
+    <button class="btn btn-sm btn-outline" (click)="ouvrirAuthModal()">Changer de Port</button>
+    <button class="btn btn-sm btn-primary" (click)="lancerRecherche()">Réessayer</button>
+  </div>
+</div>
+
+<!-- Cartes de Statistiques (Style Sakai PrimeNG) -->
+<div class="stat-grid" *ngIf="statistiques">
+  <div class="stat-card">
+    <div class="stat-icon-wrapper icon-blue">
+      <i class="pi pi-compass"></i>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Total Voyages</span>
+      <span class="stat-value">{{ statistiques.totalVoyages }}</span>
+      <span class="stat-sub">Offres actives en catalogue</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrapper icon-green">
+      <i class="pi pi-tag"></i>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Prix Minimum</span>
+      <span class="stat-value">{{ statistiques.prixMinimumCatalogue | number:'1.2-2' }} €</span>
+      <span class="stat-sub">Max : {{ statistiques.prixMaximumCatalogue | number:'1.2-2' }} €</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrapper icon-orange">
+      <i class="pi pi-percentage"></i>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">En Promotion</span>
+      <span class="stat-value">{{ statistiques.totalOffresEnPromotion }}</span>
+      <span class="stat-sub">Tarifs réduits disponibles</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon-wrapper icon-purple">
+      <i class="pi pi-star-fill"></i>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Note Moyenne</span>
+      <span class="stat-value">{{ statistiques.noteMoyenneGlobale | number:'1.1-1' }} / 5</span>
+      <span class="stat-sub">{{ statistiques.totalConsultations }} consultations</span>
+    </div>
+  </div>
+</div>
+
+<!-- Carte de Filtres et Recherche Multi-critères -->
+<div class="card filter-card">
+  <div class="filter-header">
+    <div class="search-input-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        [(ngModel)]="criteres.motCle"
+        (keyup.enter)="lancerRecherche()"
+        placeholder="Rechercher par destination, mot-clé, compagnie (ex: Rome, Tunisair, Paris)..."
+        class="form-control search-input"
+      />
+    </div>
+    <div class="filter-actions-top">
+      <button class="btn btn-primary" (click)="lancerRecherche()" [disabled]="loading">
+        <i class="pi pi-filter"></i>
+        <span>Filtrer</span>
+      </button>
+      <button class="btn btn-outline" (click)="reinitialiserFiltres()">
+        <i class="pi pi-filter-slash"></i>
+        <span>Effacer</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-col">
+      <label class="form-label">Ville de départ</label>
+      <input type="text" [(ngModel)]="criteres.villeDepart" placeholder="Ex: Tunis, Paris..." class="form-control" />
+    </div>
+
+    <div class="filter-col">
+      <label class="form-label">Ville de destination</label>
+      <input type="text" [(ngModel)]="criteres.villeDestination" placeholder="Ex: Rome, Barcelone..." class="form-control" />
+    </div>
+
+    <div class="filter-col">
+      <label class="form-label">Type de transport</label>
+      <select [(ngModel)]="criteres.typeTransport" class="form-control">
+        <option [ngValue]="undefined">Tous les transports</option>
+        <option value="VOL">✈️ Vol (Avion)</option>
+        <option value="TRAIN">🚆 Train</option>
+        <option value="BUS">🚌 Bus</option>
+        <option value="BATEAU">🚢 Bateau</option>
+        <option value="SEJOUR_PACK">🏖️ Séjour Pack</option>
+      </select>
+    </div>
+
+    <div class="filter-col">
+      <label class="form-label">Catégorie</label>
+      <select [(ngModel)]="criteres.categorie" class="form-control">
+        <option [ngValue]="undefined">Toutes catégories</option>
+        <option value="ECONOMIQUE">Économique</option>
+        <option value="CONFORT">Confort</option>
+        <option value="PREMIUM">Premium</option>
+        <option value="LUXE">Luxe</option>
+        <option value="PROMO">Promo</option>
+      </select>
+    </div>
+
+    <div class="filter-col">
+      <label class="form-label">Budget max (€)</label>
+      <input type="number" [(ngModel)]="criteres.prixMax" placeholder="Illimité" class="form-control" />
+    </div>
+
+    <div class="filter-col">
+      <label class="form-label">Trier par</label>
+      <select [(ngModel)]="criteres.sortBy" (change)="lancerRecherche()" class="form-control">
+        <option value="prix">Prix croissant</option>
+        <option value="noteMoyenne">Meilleures notes</option>
+        <option value="dateDepart">Date de départ</option>
+        <option value="dureeMinutes">Durée la plus courte</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Filtres booléens sous forme de badges cliquables -->
+  <div class="filter-checkbox-pills">
+    <label class="checkbox-pill" [class.active]="criteres.enPromotionUniquement">
+      <input type="checkbox" [(ngModel)]="criteres.enPromotionUniquement" (change)="lancerRecherche()" />
+      <i class="pi pi-percentage"></i>
+      <span>En promotion uniquement</span>
+    </label>
+
+    <label class="checkbox-pill" [class.active]="criteres.volDirectUniquement">
+      <input type="checkbox" [(ngModel)]="criteres.volDirectUniquement" (change)="lancerRecherche()" />
+      <i class="pi pi-bolt"></i>
+      <span>Vol direct sans escale</span>
+    </label>
+
+    <label class="checkbox-pill" [class.active]="criteres.bagageSouteInclus">
+      <input type="checkbox" [(ngModel)]="criteres.bagageSouteInclus" (change)="lancerRecherche()" />
+      <i class="pi pi-briefcase"></i>
+      <span>Bagage soute inclus</span>
+    </label>
+
+    <label class="checkbox-pill" [class.active]="criteres.annulationGratuite">
+      <input type="checkbox" [(ngModel)]="criteres.annulationGratuite" (change)="lancerRecherche()" />
+      <i class="pi pi-check-circle"></i>
+      <span>Annulation gratuite</span>
+    </label>
+  </div>
+</div>
+
+<!-- Liste des Voyages en Grille de Cartes Modernes -->
+<div class="voyages-section">
+  <div class="section-top-bar">
+    <span class="results-count"><strong>{{ voyages.length }}</strong> voyage(s) trouvé(s)</span>
+    <span class="compare-counter" *ngIf="selectedIdsForCompare.length > 0">
+      <i class="pi pi-check-square"></i> {{ selectedIdsForCompare.length }} sélectionné(s) pour comparaison
+    </span>
+  </div>
+
+  <div *ngIf="voyages.length === 0 && !loading" class="empty-state card">
+    <i class="pi pi-inbox empty-icon"></i>
+    <h3>Aucun voyage ne correspond à vos critères</h3>
+    <p>Essayez d'élargir votre recherche ou de réinitialiser vos filtres.</p>
+    <button class="btn btn-outline" (click)="reinitialiserFiltres()">Réinitialiser les filtres</button>
+  </div>
+
+  <div class="voyages-grid">
+    <div class="voyage-card card" *ngFor="let v of voyages" [class.card-selected]="isSelectedForCompare(v.id)">
+      <!-- Card Header -->
+      <div class="card-top">
+        <div class="transport-badge" [ngClass]="'badge-' + v.typeTransport.toLowerCase()">
+          <i class="pi" [ngClass]="{
+            'pi-send': v.typeTransport === 'VOL',
+            'pi-directions': v.typeTransport === 'TRAIN',
+            'pi-car': v.typeTransport === 'BUS',
+            'pi-sun': v.typeTransport === 'BATEAU' || v.typeTransport === 'SEJOUR_PACK'
+          }"></i>
+          <span>{{ v.typeTransport }}</span>
+        </div>
+
+        <span class="category-pill">{{ v.categorie }}</span>
+
+        <span *ngIf="v.enPromotion" class="promo-badge">
+          -{{ v.pourcentageReduction || 15 }}%
+        </span>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card-main">
+        <h3 class="voyage-title" (click)="consulterVoyage(v.id)">{{ v.titre }}</h3>
+
+        <div class="route-display">
+          <div class="route-point">
+            <span class="city">{{ v.villeDepart }}</span>
+            <span class="date">{{ v.dateDepart | date:'dd MMM yyyy - HH:mm' }}</span>
+          </div>
+          <div class="route-line">
+            <i class="pi pi-arrow-right"></i>
+            <span class="duration">{{ v.dureeFormatee || (v.dureeMinutes + ' min') }}</span>
+          </div>
+          <div class="route-point text-right">
+            <span class="city">{{ v.villeDestination }}</span>
+            <span class="country">{{ v.paysDestination }}</span>
+          </div>
+        </div>
+
+        <!-- Badges & Avantages -->
+        <div class="perks-row">
+          <span class="perk-tag" *ngIf="v.bagageSouteInclus" title="Bagage soute inclus"><i class="pi pi-briefcase"></i> Soute</span>
+          <span class="perk-tag" *ngIf="v.wifiDisponible" title="Wi-Fi à bord"><i class="pi pi-wifi"></i> Wi-Fi</span>
+          <span class="perk-tag" *ngIf="v.repasInclus" title="Repas inclus"><i class="pi pi-apple"></i> Repas</span>
+          <span class="perk-tag" *ngIf="v.annulationGratuite" title="Annulation gratuite"><i class="pi pi-shield"></i> Annul. gratuite</span>
+          <span class="perk-tag" *ngIf="v.escales === 0"><i class="pi pi-bolt"></i> Direct</span>
+        </div>
+
+        <!-- Avis & Places -->
+        <div class="info-row">
+          <div class="rating">
+            <i class="pi pi-star-fill text-warning"></i>
+            <span class="rating-val">{{ v.noteMoyenne | number:'1.1-1' }}</span>
+            <span class="rating-count">({{ v.nombreAvis }} avis)</span>
+          </div>
+          <div class="seats" [class.seats-low]="v.placesDisponibles <= 5">
+            <i class="pi pi-users"></i>
+            <span>{{ v.placesDisponibles }} places</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="card-bottom">
+        <div class="price-box">
+          <span *ngIf="v.enPromotion && v.prixBase" class="old-price">{{ v.prixBase | number:'1.2-2' }} €</span>
+          <span class="current-price">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} <small>€</small></span>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn-icon" (click)="toggleSelectCompare(v.id)" [title]="isSelectedForCompare(v.id) ? 'Retirer du comparateur' : 'Ajouter au comparateur'">
+            <i class="pi" [ngClass]="isSelectedForCompare(v.id) ? 'pi-check-circle text-primary' : 'pi-sliders-h'"></i>
+          </button>
+          <button class="btn btn-sm btn-outline" (click)="consulterVoyage(v.id)">Détails</button>
+          <button class="btn btn-sm btn-secondary" (click)="ouvrirModalModification(v)" title="Modifier (Token requis)"><i class="pi pi-pencil"></i></button>
+          <button class="btn btn-sm btn-danger-outline" (click)="supprimerVoyage(v.id, v.titre)" title="Supprimer (ROLE_ADMIN requis)"><i class="pi pi-trash"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 1 : DETAILS DU VOYAGE & SUGGESTIONS SIMILAIRES     -->
+<!-- ======================================================== -->
+<div class="modal-overlay" *ngIf="showDetailsModal && offreConsultee">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="modal-tag">{{ offreConsultee.typeTransport }} • {{ offreConsultee.categorie }}</span>
+        <h2>{{ offreConsultee.titre }}</h2>
+      </div>
+      <button class="btn-close" (click)="fermerDetailsModal()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="details-grid">
+        <div class="details-left">
+          <p class="voyage-desc">{{ offreConsultee.description || 'Offre complète avec toutes les commodités incluses.' }}</p>
+
+          <div class="details-specs">
+            <div class="spec-item"><span class="lbl">Code Voyage</span><span class="val font-mono">{{ offreConsultee.codeVoyage }}</span></div>
+            <div class="spec-item"><span class="lbl">Compagnie</span><span class="val">{{ offreConsultee.compagnie }}</span></div>
+            <div class="spec-item"><span class="lbl">Départ</span><span class="val">{{ offreConsultee.villeDepart }} ({{ offreConsultee.dateDepart | date:'short' }})</span></div>
+            <div class="spec-item"><span class="lbl">Arrivée</span><span class="val">{{ offreConsultee.villeDestination }}, {{ offreConsultee.paysDestination }}</span></div>
+            <div class="spec-item"><span class="lbl">Durée</span><span class="val">{{ offreConsultee.dureeMinutes }} min</span></div>
+            <div class="spec-item"><span class="lbl">Places restantes</span><span class="val text-primary font-bold">{{ offreConsultee.placesDisponibles }}</span></div>
+          </div>
+        </div>
+
+        <div class="details-right">
+          <div class="price-banner">
+            <span class="banner-lbl">Tarif par passager</span>
+            <div class="banner-price">
+              <span class="price-strike" *ngIf="offreConsultee.enPromotion">{{ offreConsultee.prixBase | number:'1.2-2' }} €</span>
+              <span class="price-main">{{ (offreConsultee.prixEffectif || offreConsultee.prixBase) | number:'1.2-2' }} €</span>
+            </div>
+            <span class="stock-badge" [class.badge-danger]="offreConsultee.placesDisponibles < 5">
+              {{ offreConsultee.placesDisponibles > 0 ? 'Disponible immédiatement' : 'Complet' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggestions similaires calculées par le microservice -->
+      <div class="similar-section" *ngIf="suggestionsOffre">
+        <h4 class="similar-title"><i class="pi pi-sparkles text-primary"></i> Alternatives similaires recommandées</h4>
+        <div class="similar-grid">
+          <div class="similar-card" *ngFor="let s of (suggestionsOffre.offresSimilaires || []).slice(0, 3)" (click)="consulterVoyage(s.id)">
+            <div class="similar-dest">{{ s.villeDestination }} ({{ s.typeTransport }})</div>
+            <div class="similar-price">{{ (s.prixEffectif || s.prixBase) | number:'1.2-2' }} €</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="fermerDetailsModal()">Fermer</button>
+      <button class="btn btn-primary" (click)="toggleSelectCompare(offreConsultee.id); fermerDetailsModal()">
+        {{ isSelectedForCompare(offreConsultee.id) ? 'Retirer du comparateur' : 'Ajouter au comparateur' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 2 : COMPARATEUR D'OFFRES COTE-A-COTE               -->
+<!-- ======================================================== -->
+<div class="modal-overlay" *ngIf="showCompareModal && comparaisonResult">
+  <div class="modal-card modal-xl">
+    <div class="modal-header">
+      <h2><i class="pi pi-sliders-h"></i> Comparateur d'Offres Côte-à-Côte</h2>
+      <button class="btn-close" (click)="fermerComparateur()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Synthèse intelligente générée par le microservice -->
+      <div class="card banner-info" *ngIf="comparaisonResult.syntheseRecommandation">
+        <i class="pi pi-info-circle banner-icon"></i>
+        <div class="banner-body">
+          <h4>Synthèse de la Recommandation</h4>
+          <p>{{ comparaisonResult.syntheseRecommandation }}</p>
+          <small>Écart de prix maximal : <strong>{{ comparaisonResult.ecartPrixMax | number:'1.2-2' }} €</strong></small>
+        </div>
+      </div>
+
+      <!-- Tableau comparatif -->
+      <div class="table-responsive">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Critères</th>
+              <th *ngFor="let off of comparaisonResult.offresComparees">
+                {{ off.titre }}
+                <div class="comp-dest">{{ off.villeDepart }} ➔ {{ off.villeDestination }}</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold">Prix effectif</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees" class="font-bold text-primary font-size-lg">
+                {{ (off.prixEffectif || off.prixBase) | number:'1.2-2' }} €
+              </td>
+            </tr>
+            <tr>
+              <td>Compagnie</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.compagnie }}</td>
+            </tr>
+            <tr>
+              <td>Transport</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.typeTransport }}</td>
+            </tr>
+            <tr>
+              <td>Durée</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.dureeMinutes }} min</td>
+            </tr>
+            <tr>
+              <td>Places restantes</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.placesDisponibles }}</td>
+            </tr>
+            <tr>
+              <td>Note clients</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">⭐ {{ off.noteMoyenne | number:'1.1-1' }} / 5</td>
+            </tr>
+            <tr>
+              <td>Bagage soute</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.bagageSouteInclus ? '✅ Inclus' : '❌ Non inclus' }}</td>
+            </tr>
+            <tr>
+              <td>Annulation</td>
+              <td *ngFor="let off of comparaisonResult.offresComparees">{{ off.annulationGratuite ? '✅ Gratuite' : '❌ Payante' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="fermerComparateur()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 3 : SUGGESTIONS INTELLIGENTES IA                  -->
+<!-- ======================================================== -->
+<div class="modal-overlay" *ngIf="showSuggestionsModal && suggestionsResult">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h2><i class="pi pi-sparkles text-primary"></i> Moteur de Suggestions Intelligentes</h2>
+      <button class="btn-close" (click)="fermerSuggestions()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="suggestions-section">
+        <h3>🔥 Tendances du moment</h3>
+        <div class="suggestions-cards">
+          <div class="sugg-card" *ngFor="let v of (suggestionsResult.offresTendances || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
+            <div class="sugg-title">{{ v.titre }}</div>
+            <div class="sugg-sub">{{ v.villeDestination }} • {{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} €</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="suggestions-section" style="margin-top: 1.5rem;">
+        <h3>💰 Meilleures promotions</h3>
+        <div class="suggestions-cards">
+          <div class="sugg-card" *ngFor="let v of (suggestionsResult.meilleuresPromotions || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
+            <div class="sugg-title">{{ v.titre }}</div>
+            <div class="sugg-sub text-success font-bold">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} € (-{{ v.pourcentageReduction }}%)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="suggestions-section" style="margin-top: 1.5rem;">
+        <h3>🎒 Petits budgets</h3>
+        <div class="suggestions-cards">
+          <div class="sugg-card" *ngFor="let v of (suggestionsResult.petitsBudgets || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
+            <div class="sugg-title">{{ v.titre }}</div>
+            <div class="sugg-sub text-primary">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} €</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="fermerSuggestions()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 4 : CREATION / MODIFICATION D'UN VOYAGE           -->
+<!-- ======================================================== -->
+<div class="modal-overlay" *ngIf="showFormModal">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Modifier le Voyage #' + editingVoyageId : 'Nouveau Voyage' }}</h2>
+      <button class="btn-close" (click)="fermerFormModal()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <form [formGroup]="voyageForm" (ngSubmit)="sauvegarderVoyage()">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Code Voyage *</label>
+            <input type="text" formControlName="codeVoyage" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Titre de l'Offre *</label>
+            <input type="text" formControlName="titre" class="form-control" placeholder="Ex: Escapade Romaine" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ville de Départ *</label>
+            <input type="text" formControlName="villeDepart" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ville de Destination *</label>
+            <input type="text" formControlName="villeDestination" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pays Destination *</label>
+            <input type="text" formControlName="paysDestination" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Compagnie *</label>
+            <input type="text" formControlName="compagnie" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Type Transport *</label>
+            <select formControlName="typeTransport" class="form-control">
+              <option value="VOL">VOL (Avion)</option>
+              <option value="TRAIN">TRAIN</option>
+              <option value="BUS">BUS</option>
+              <option value="BATEAU">BATEAU</option>
+              <option value="SEJOUR_PACK">SEJOUR_PACK</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Catégorie *</label>
+            <select formControlName="categorie" class="form-control">
+              <option value="ECONOMIQUE">ECONOMIQUE</option>
+              <option value="CONFORT">CONFORT</option>
+              <option value="PREMIUM">PREMIUM</option>
+              <option value="LUXE">LUXE</option>
+              <option value="PROMO">PROMO</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date & Heure de Départ *</label>
+            <input type="datetime-local" formControlName="dateDepart" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date & Heure d'Arrivée *</label>
+            <input type="datetime-local" formControlName="dateArrivee" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Prix Base (€) *</label>
+            <input type="number" formControlName="prixBase" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Places Disponibles *</label>
+            <input type="number" formControlName="placesDisponibles" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label class="form-label">Description</label>
+          <textarea formControlName="description" rows="2" class="form-control" placeholder="Détails du voyage..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="fermerFormModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <i class="pi pi-check"></i>
+          <span>{{ isEditMode ? 'Mettre à jour' : 'Créer le Voyage' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 5 : CONFIGURATION JWT & PORTS MICROSERVICES       -->
+<!-- ======================================================== -->
+<div class="modal-overlay" *ngIf="showAuthModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2><i class="pi pi-shield text-primary"></i> Sécurité JWT & Connexion Backend</h2>
+      <button class="btn-close" (click)="showAuthModal = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Renseignez un token JWT pour tester la création, modification et suppression des voyages selon votre rôle.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">URL Backend Microservice Module 2</label>
+        <input type="text" [(ngModel)]="apiUrlInput" class="form-control font-mono" />
+        <div class="btn-group-chips" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersNatif()">Natif :8082</button>
+          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersDocker()">Docker :9082</button>
+          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersGateway()">Gateway :8080</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 1rem;">
+        <label class="form-label">Jeton d'authentification (Token JWT)</label>
+        <textarea [(ngModel)]="jwtTokenInput" rows="3" class="form-control font-mono" placeholder="Collez votre jeton JWT ici..."></textarea>
+        <div class="btn-group-chips" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-xs btn-primary" (click)="remplirTokenAdminDemo()">Remplir Token ROLE_ADMIN</button>
+          <button type="button" class="btn btn-xs btn-secondary" (click)="remplirTokenClientDemo()">Remplir Token ROLE_USER</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showAuthModal = false">Annuler</button>
+      <button class="btn btn-primary" (click)="sauvegarderAuth()">Enregistrer</button>
+    </div>
+  </div>
+</div>
