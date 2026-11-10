@@ -112,11 +112,14 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/skyvoyage/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/skyvoyage
     depends_on:
       - redis
       - rabbitmq
       - discovery
       - config-server
+      - keycloak
     restart: unless-stopped
     networks:
       - skyvoyage-net
