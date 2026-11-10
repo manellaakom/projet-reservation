@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
+import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -22,6 +22,8 @@ public class Paiement implements Serializable {
     private LocalDateTime datePaiement;
     private String statut;
     private String reference;
+    private Boolean paiementEnLigne;
     @Indexed
+    private String paymeeToken;
     private String transactionId;
 }

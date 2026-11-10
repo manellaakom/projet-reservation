@@ -15,7 +15,7 @@ public final class PaiementMapper {
                 paiement.getDatePaiement(),
                 paiement.getStatut(),
                 paiement.getReference(),
-                paiement.getTransactionId()
+                Boolean.TRUE.equals(paiement.getPaiementEnLigne())
         );
     }
 }

@@ -2,14 +2,20 @@ package com.travel.paiement.service;
 
 import com.travel.paiement.dto.PaiementRequest;
 import com.travel.paiement.dto.PaiementResponse;
+import com.travel.paiement.dto.PaymeeCheckoutRequest;
+import com.travel.paiement.dto.PaymeeCheckoutResponse;
+import com.travel.paiement.dto.PaymeeWebhookRequest;
 import com.travel.paiement.entity.Paiement;
-import com.travel.paiement.entity.Transaction;
 import com.travel.paiement.exception.ResourceNotFoundException;
 import com.travel.paiement.mapper.PaiementMapper;
 import com.travel.paiement.repository.PaiementRepository;
-import com.travel.paiement.repository.TransactionRepository;
+import com.travel.paiement.config.PaymeeProperties;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,17 +24,61 @@ import java.util.UUID;
 public class PaiementService {
 
     private final PaiementRepository paiementRepository;
-    private final TransactionRepository transactionRepository;
+    private final PaymeeClient paymeeClient;
+    private final PaymeeProperties paymeeProperties;
 
-    public PaiementService(PaiementRepository paiementRepository, TransactionRepository transactionRepository) {
+    public PaiementService(
+            PaiementRepository paiementRepository,
+            PaymeeClient paymeeClient,
+            PaymeeProperties paymeeProperties
+    ) {
         this.paiementRepository = paiementRepository;
-        this.transactionRepository = transactionRepository;
+        this.paymeeClient = paymeeClient;
+        this.paymeeProperties = paymeeProperties;
     }
 
     public PaiementResponse create(PaiementRequest request) {
-        Paiement paiement = new Paiement(UUID.randomUUID().toString(), request.montant(),
-                request.datePaiement(), request.statut(), request.reference(), null);
+        Paiement paiement = new Paiement();
+        paiement.setId(UUID.randomUUID().toString());
+        paiement.setMontant(request.montant());
+        paiement.setDatePaiement(request.datePaiement());
+        paiement.setStatut(request.statut());
+        paiement.setReference(request.reference());
+        paiement.setPaiementEnLigne(false);
         return PaiementMapper.toResponse(paiementRepository.save(paiement));
+    }
+
+    public PaymeeCheckoutResponse createPaymeeCheckout(PaymeeCheckoutRequest request) {
+        paymeeClient.validateConfiguration();
+
+        Paiement paiement = new Paiement();
+        paiement.setId(UUID.randomUUID().toString());
+        paiement.setMontant(request.montant());
+        paiement.setDatePaiement(LocalDateTime.now());
+        paiement.setStatut("En attente");
+        paiement.setReference(request.reference());
+        paiement.setPaiementEnLigne(true);
+        paiement = paiementRepository.save(paiement);
+
+        String encodedId = URLEncoder.encode(paiement.getId(), StandardCharsets.UTF_8);
+        String frontendUrl = removeTrailingSlash(paymeeProperties.getFrontendBaseUrl());
+        String returnUrl = frontendUrl + "/?paiement=" + encodedId;
+        String cancelUrl = frontendUrl + "/?paiementAnnule=" + encodedId;
+
+        try {
+            PaymeeClient.CheckoutSession checkout = paymeeClient.createCheckout(
+                    request,
+                    paiement.getId(),
+                    returnUrl,
+                    cancelUrl
+            );
+            paiement.setPaymeeToken(checkout.token());
+            paiementRepository.save(paiement);
+            return new PaymeeCheckoutResponse(paiement.getId(), checkout.paymentUrl());
+        } catch (PaymeeIntegrationException exception) {
+            paiementRepository.delete(paiement);
+            throw exception;
+        }
     }
 
     public List<PaiementResponse> findAll() {
@@ -43,6 +93,11 @@ public class PaiementService {
 
     public PaiementResponse update(String id, PaiementRequest request) {
         Paiement paiement = getPaiement(id);
+        if (Boolean.TRUE.equals(paiement.getPaiementEnLigne())) {
+            throw new IllegalStateException(
+                    "Le statut d'un paiement Paymee est mis à jour uniquement après confirmation du prestataire."
+            );
+        }
         paiement.setMontant(request.montant());
         paiement.setDatePaiement(request.datePaiement());
         paiement.setStatut(request.statut());
@@ -52,42 +107,74 @@ public class PaiementService {
 
     public void delete(String id) {
         Paiement paiement = getPaiement(id);
-        if (paiement.getTransactionId() != null) {
-            transactionRepository.findById(paiement.getTransactionId()).ifPresent(transaction -> {
-                transaction.setPaiementId(null);
-                transactionRepository.save(transaction);
-            });
+        if (Boolean.TRUE.equals(paiement.getPaiementEnLigne())) {
+            throw new IllegalStateException("Un paiement Paymee ne peut pas être supprimé.");
         }
         paiementRepository.delete(paiement);
     }
 
-    public PaiementResponse linkTransaction(String paiementId, String transactionId) {
-        Paiement paiement = getPaiement(paiementId);
-        Transaction transaction = transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Transaction introuvable avec l'ID : " + transactionId));
-
-        if (paiement.getTransactionId() != null && !paiement.getTransactionId().equals(transactionId)) {
-            transactionRepository.findById(paiement.getTransactionId()).ifPresent(previous -> {
-                previous.setPaiementId(null);
-                transactionRepository.save(previous);
-            });
-        }
-        if (transaction.getPaiementId() != null && !transaction.getPaiementId().equals(paiementId)) {
-            paiementRepository.findById(transaction.getPaiementId()).ifPresent(previous -> {
-                previous.setTransactionId(null);
-                paiementRepository.save(previous);
-            });
+    public PaiementResponse verifyPaymeePayment(String id) {
+        Paiement paiement = getPaiement(id);
+        if (!Boolean.TRUE.equals(paiement.getPaiementEnLigne()) || isBlank(paiement.getPaymeeToken())) {
+            throw new IllegalStateException("Ce paiement ne possède pas de session Paymee à vérifier.");
         }
 
-        paiement.setTransactionId(transactionId);
-        transaction.setPaiementId(paiementId);
-        paiementRepository.save(paiement);
-        transactionRepository.save(transaction);
+        PaymeeClient.PaymentCheck check = paymeeClient.checkPayment(paiement.getPaymeeToken());
+        if (Boolean.TRUE.equals(check.paymentStatus())) {
+            confirmPayment(paiement, check);
+        }
+        return PaiementMapper.toResponse(paiement);
+    }
+
+    public PaiementResponse handlePaymeeWebhook(PaymeeWebhookRequest webhook) {
+        if (!paymeeClient.isValidWebhookChecksum(
+                webhook.token(),
+                webhook.paymentStatus(),
+                webhook.checkSum()
+        )) {
+            throw new InvalidPaymeeWebhookException("Signature Paymee invalide.");
+        }
+
+        Paiement paiement = paiementRepository.findByPaymeeToken(webhook.token())
+                .orElseThrow(() -> new ResourceNotFoundException("Session de paiement introuvable."));
+
+        PaymeeClient.PaymentCheck check = paymeeClient.checkPayment(webhook.token());
+        if (Boolean.TRUE.equals(check.paymentStatus())) {
+            confirmPayment(paiement, check);
+        } else if (!webhook.paymentStatus() && !"Payé".equals(paiement.getStatut())) {
+            paiement.setStatut("Échoué");
+            paiement.setDatePaiement(LocalDateTime.now());
+            paiement.setTransactionId(webhook.transactionId());
+            paiementRepository.save(paiement);
+        }
         return PaiementMapper.toResponse(paiement);
     }
 
     private Paiement getPaiement(String id) {
         return paiementRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Paiement introuvable avec l'ID : " + id));
+    }
+
+    private void confirmPayment(Paiement paiement, PaymeeClient.PaymentCheck check) {
+        BigDecimal confirmedAmount = check.amount();
+        if (confirmedAmount == null || confirmedAmount.compareTo(paiement.getMontant()) != 0) {
+            throw new PaymeeIntegrationException(
+                    "Le montant confirmé par Paymee ne correspond pas au montant du paiement."
+            );
+        }
+        paiement.setStatut("Payé");
+        paiement.setDatePaiement(LocalDateTime.now());
+        if (!isBlank(check.transactionId())) {
+            paiement.setTransactionId(check.transactionId());
+        }
+        paiementRepository.save(paiement);
+    }
+
+    private String removeTrailingSlash(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

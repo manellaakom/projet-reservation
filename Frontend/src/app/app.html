@@ -1,0 +1,247 @@
+<div class="app-shell">
+  <header class="topbar">
+    <button class="brand" type="button" (click)="showView('home')" aria-label="Retour à l'accueil">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <span class="brand-name">SkyVoyage</span>
+      <span class="brand-module">Réservation & Paiement</span>
+    </button>
+    <div class="topbar-right">
+      @if (errorMessage) {
+        <span class="gateway-status gateway-offline"><span class="status-pulse"></span> Service indisponible</span>
+      } @else {
+        <span class="gateway-status"><span class="status-pulse"></span> Espace client</span>
+      }
+      <span class="avatar" aria-label="Profil utilisateur">{{ keycloak.username.slice(0, 2).toUpperCase() }}</span>
+      <button class="logout-button" type="button" (click)="keycloak.logout()">Se déconnecter</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="side-section-label">Espace de travail</div>
+      <nav class="side-nav" aria-label="Navigation principale">
+        <button type="button" [class.active]="currentView === 'home'" (click)="showView('home')">
+          <span class="nav-icon home-icon" aria-hidden="true"></span><span>Accueil</span>
+        </button>
+        <button type="button" [class.active]="currentView === 'reservations'" (click)="showView('reservations')">
+          <span class="nav-icon ticket-icon" aria-hidden="true"></span><span>Réservations</span>
+        </button>
+        <button type="button" [class.active]="currentView === 'paiements'" (click)="showView('paiements')">
+          <span class="nav-icon payment-icon" aria-hidden="true"></span><span>Paiements</span>
+        </button>
+      </nav>
+
+      <div class="side-section-label services-label">Services connectés</div>
+      <a class="side-link" href="http://localhost:8084/swagger-ui.html" target="_blank" rel="noreferrer">
+        <span class="service-dot"></span><span>API Paiements · Swagger</span><span class="external-mark" aria-hidden="true">↗</span>
+      </a>
+      <a class="side-link" href="http://localhost:8003/docs" target="_blank" rel="noreferrer">
+        <span class="service-dot reservation-dot"></span><span>API Réservations · Docs</span><span class="external-mark" aria-hidden="true">↗</span>
+      </a>
+
+      <div class="sidebar-bottom">
+        <span class="sidebar-bottom-icon" aria-hidden="true">✓</span>
+        <div><strong>Voyagez sereinement</strong><span>Vos paiements au même endroit</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      @if (currentView === 'home') {
+        <div class="page-heading">
+          <div><p class="eyebrow">Votre espace voyage</p><h1>Bonjour, bienvenue à bord.</h1></div>
+          <button class="refresh-button" type="button" (click)="loadPaiements()" [disabled]="loading">
+            <span aria-hidden="true">↻</span> Actualiser
+          </button>
+        </div>
+
+        @if (errorMessage) {
+          <div class="alert error-alert" role="alert">
+            <span>{{ errorMessage }}</span><button type="button" (click)="loadPaiements()">Réessayer</button>
+          </div>
+        }
+
+        <section class="hero">
+          <div class="hero-copy">
+            <span class="hero-kicker"><span class="kicker-dot"></span> SkyVoyage · Votre espace de réservation</span>
+            <h2>Votre prochain voyage<br />commence <span>ici.</span></h2>
+            <p>
+              Retrouvez vos réservations et gérez vos paiements dans un espace simple et sécurisé.
+              Un seul endroit pour préparer votre départ en toute tranquillité.
+            </p>
+            <div class="hero-actions">
+              <button class="button button-light" type="button" (click)="showView('paiements')">
+                <span aria-hidden="true">▤</span> Consulter mes paiements <span class="button-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="button button-outline" type="button" (click)="showView('reservations')">
+                Mes réservations
+              </button>
+            </div>
+            <div class="hero-facts">
+              <div><span class="fact-icon" aria-hidden="true">✈</span><strong>Réservations</strong><small>Votre espace voyage</small></div>
+              <div><span class="fact-icon" aria-hidden="true">▣</span><strong>Paiements</strong><small>Suivi centralisé</small></div>
+              <div><span class="fact-icon" aria-hidden="true">◈</span><strong>Références</strong><small>Retrouvez vos opérations</small></div>
+            </div>
+          </div>
+
+          <div class="boarding-card" aria-label="Carte de voyage SkyVoyage">
+            <div class="boarding-top">
+              <span class="airline-mark" aria-hidden="true">✦</span>
+              <div><strong>SKYVOYAGE AIRLINES</strong><small>ESPACE VOYAGEUR</small></div>
+              <span class="active-pill">À BORD</span>
+            </div>
+            <div class="route">
+              <div><span>VOTRE ESPACE</span><strong>SKY</strong><small>Réservations</small></div>
+              <div class="route-line"><span>✈</span></div>
+              <div><span>VOTRE SUIVI</span><strong>PAY</strong><small>Paiements</small></div>
+            </div>
+            <div class="ticket-divider"></div>
+            <div class="ticket-details">
+              <div><span>PAIEMENTS</span><strong>{{ paiements.length }} opération{{ paiements.length > 1 ? 's' : '' }}</strong></div>
+              <div><span>RÉFÉRENCE</span><strong>Suivi personnalisé</strong></div>
+              <div><span>RÉSERVATIONS</span><strong>Espace dédié</strong></div>
+              <div><span>SERVICE</span><strong>SkyVoyage</strong></div>
+            </div>
+            <div class="barcode" aria-hidden="true"></div>
+            <div class="ticket-footer"><span>SKYVOYAGE · BON VOYAGE</span><span>✓ Votre espace client</span></div>
+          </div>
+        </section>
+
+        <section class="overview-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">En un coup d'œil</p><h2>Résumé de vos paiements</h2></div>
+            <button class="text-link" type="button" (click)="showView('paiements')">Voir les paiements <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="stat-grid">
+            <article class="stat-card"><span class="stat-icon blue-icon" aria-hidden="true">▣</span><div><span>Total des paiements</span><strong>{{ paiements.length }}</strong><small>Opérations enregistrées</small></div></article>
+            <article class="stat-card"><span class="stat-icon green-icon" aria-hidden="true">↗</span><div><span>Montant réglé</span><strong>{{ totalPaid | number:'1.0-2' }} DT</strong><small>Paiements confirmés</small></div></article>
+            <article class="stat-card"><span class="stat-icon amber-icon" aria-hidden="true">◷</span><div><span>En attente</span><strong>{{ pendingCount }}</strong><small>À suivre</small></div></article>
+            <article class="stat-card"><span class="stat-icon violet-icon" aria-hidden="true">✈</span><div><span>Réservations</span><strong>Mon espace</strong><small>Consulter mes voyages</small></div></article>
+          </div>
+        </section>
+
+        <section class="features-section">
+          <div class="section-heading"><div><p class="eyebrow">Votre voyage, en toute simplicité</p><h2>Réservation et paiement réunis.</h2></div></div>
+          <div class="feature-grid">
+            <article class="feature-card"><span class="feature-symbol blue-icon">01</span><h3>Vos réservations</h3><p>Un espace dédié pour retrouver et suivre les informations de vos voyages.</p><button class="feature-link" type="button" (click)="showView('reservations')">Accéder aux réservations →</button></article>
+            <article class="feature-card"><span class="feature-symbol green-icon">02</span><h3>Vos paiements</h3><p>Consultez les montants, dates, références et statuts de vos paiements.</p><button class="feature-link" type="button" (click)="showView('paiements')">Gérer les paiements →</button></article>
+            <article class="feature-card"><span class="feature-symbol violet-icon">03</span><h3>Suivi clair</h3><p>Chaque opération est retrouvable grâce à sa référence et son statut.</p><button class="feature-link" type="button" (click)="showView('paiements')">Voir mes opérations →</button></article>
+          </div>
+        </section>
+      } @else if (currentView === 'paiements') {
+        <div class="page-heading management-heading">
+          <div><p class="eyebrow">Espace de travail / Paiements</p><h1>Gestion des paiements</h1><p class="page-description">Suivez les montants et les transactions liés à vos réservations.</p></div>
+          <div class="heading-actions">
+            <button class="button button-primary" type="button" (click)="openOnlineCheckout()"><span aria-hidden="true">▣</span> Payer en ligne</button>
+            <button class="button button-secondary" type="button" (click)="openCreateModal()"><span aria-hidden="true">＋</span> Saisir un paiement</button>
+          </div>
+        </div>
+
+        @if (successMessage) { <div class="alert success-alert" role="status">{{ successMessage }}</div> }
+        @if (errorMessage) {
+          <div class="alert error-alert" role="alert"><span>{{ errorMessage }}</span><button type="button" (click)="loadPaiements()">Réessayer</button></div>
+        }
+
+        <div class="management-stats">
+          <article class="mini-stat"><span class="mini-stat-icon blue-icon">▣</span><div><span>Nombre de paiements</span><strong>{{ paiements.length }}</strong></div></article>
+          <article class="mini-stat"><span class="mini-stat-icon green-icon">↗</span><div><span>Montant réglé</span><strong>{{ totalPaid | number:'1.0-2' }} DT</strong></div></article>
+          <article class="mini-stat"><span class="mini-stat-icon amber-icon">◷</span><div><span>En attente</span><strong>{{ pendingCount }}</strong></div></article>
+          <article class="mini-stat"><span class="mini-stat-icon violet-icon">✈</span><div><span>Références suivies</span><strong>{{ paiements.length }}</strong></div></article>
+        </div>
+
+        <section class="table-panel">
+          <div class="table-heading"><div><h2>Historique des paiements</h2><p>Les données proviennent du service Paiement.</p></div><button class="refresh-button" type="button" (click)="loadPaiements()" [disabled]="loading"><span aria-hidden="true">↻</span> Actualiser</button></div>
+          <div class="table-controls">
+            <label class="search-box"><span aria-hidden="true">⌕</span><input type="search" [(ngModel)]="searchTerm" placeholder="Rechercher une référence..." aria-label="Rechercher un paiement" /></label>
+            <label class="status-select"><span class="visually-hidden">Filtrer par statut</span><select [(ngModel)]="statusFilter"><option value="Tous les statuts">Tous les statuts</option>@for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }</select></label>
+          </div>
+
+          @if (loading) {
+            <div class="table-state"><span class="loader"></span><p>Chargement des paiements...</p></div>
+          } @else if (filteredPaiements.length === 0) {
+            <div class="table-state empty-state"><span class="empty-icon" aria-hidden="true">▣</span><h3>{{ paiements.length ? 'Aucun résultat' : 'Aucun paiement pour le moment' }}</h3><p>{{ paiements.length ? 'Essayez un autre terme de recherche ou un autre filtre.' : 'Enregistrez un paiement pour commencer le suivi.' }}</p>@if (!paiements.length) { <button class="button button-primary" type="button" (click)="openCreateModal()">Ajouter un paiement</button> }</div>
+          } @else {
+            <div class="table-scroll"><table>
+              <thead><tr><th>Référence</th><th>Date du paiement</th><th>Montant</th><th>Statut</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+              <tbody>@for (paiement of filteredPaiements; track paiement.id) {
+                <tr>
+                  <td><span class="reference-cell"><span class="reference-icon" aria-hidden="true">▣</span>{{ paiement.reference }}</span>@if (paiement.paiementEnLigne) { <span class="provider-tag">Paymee</span> }</td>
+                  <td>{{ paiement.datePaiement | date:'dd/MM/yyyy, HH:mm' }}</td>
+                  <td><strong>{{ paiement.montant | number:'1.0-2' }} DT</strong></td>
+                  <td><span class="status-badge" [ngClass]="statusClass(paiement.statut)"><span></span>{{ paiement.statut }}</span></td>
+                  <td>@if (paiement.paiementEnLigne) { <span class="verified-label">Confirmé par le prestataire</span> } @else { <div class="row-actions"><button type="button" class="icon-button" (click)="openEditModal(paiement)" [attr.aria-label]="'Modifier le paiement ' + paiement.reference" title="Modifier">✎</button><button type="button" class="icon-button delete-action" (click)="deletePaiement(paiement)" [attr.aria-label]="'Supprimer le paiement ' + paiement.reference" title="Supprimer">×</button></div> }</td>
+                </tr>
+              }</tbody>
+            </table></div>
+            <div class="table-footer"><span>{{ filteredPaiements.length }} paiement{{ filteredPaiements.length > 1 ? 's' : '' }} affiché{{ filteredPaiements.length > 1 ? 's' : '' }}</span><span>Service Paiement · API Gateway</span></div>
+          }
+        </section>
+      } @else {
+        <div class="page-heading management-heading">
+          <div><p class="eyebrow">Espace de travail / Réservations</p><h1>Mes réservations</h1><p class="page-description">Retrouvez les voyages associés à vos réservations.</p></div>
+        </div>
+        <section class="reservation-intro">
+          <div class="reservation-icon" aria-hidden="true">✈</div>
+          <div><p class="eyebrow">Service Réservation</p><h2>Votre espace de réservation</h2><p>La connexion est prévue sur l’API Réservation du projet. Les routes de ce service sont encore en cours de développement ; les réservations ne sont pas simulées ici.</p><a class="button button-primary" href="http://localhost:8003/docs" target="_blank" rel="noreferrer">Consulter l’API Réservation <span aria-hidden="true">↗</span></a></div>
+        </section>
+        <section class="table-panel reservation-payment-panel">
+          <div class="table-heading"><div><h2>Paiements associés à mes références</h2><p>Retrouvez les paiements existants liés aux références de réservation.</p></div><button class="button button-secondary" type="button" (click)="showView('paiements')">Voir tous les paiements</button></div>
+          @if (loading) { <div class="table-state"><span class="loader"></span><p>Chargement des paiements...</p></div> }
+          @else if (paiements.length === 0) { <div class="table-state empty-state"><h3>Aucun paiement associé</h3><p>Les paiements apparaîtront ici lorsqu’ils seront enregistrés.</p></div> }
+          @else {
+            <div class="table-scroll"><table><thead><tr><th>Référence réservation / paiement</th><th>Date</th><th>Montant</th><th>Statut</th></tr></thead><tbody>
+              @for (paiement of paiements; track paiement.id) { <tr><td><span class="reference-cell">{{ paiement.reference }}</span></td><td>{{ paiement.datePaiement | date:'dd/MM/yyyy' }}</td><td><strong>{{ paiement.montant | number:'1.0-2' }} DT</strong></td><td><span class="status-badge" [ngClass]="statusClass(paiement.statut)"><span></span>{{ paiement.statut }}</span></td></tr> }
+            </tbody></table></div>
+          }
+        </section>
+      }
+
+      <footer class="page-footer"><span>SkyVoyage · Réservation & Paiement</span><span>Nous vous souhaitons un excellent voyage.</span></footer>
+    </main>
+  </div>
+
+  @if (modalOpen) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" (click)="$event.stopPropagation()">
+        <div class="modal-heading"><div><p class="eyebrow">{{ editingPaiement ? 'Mise à jour' : 'Nouvelle transaction' }}</p><h2 id="modal-title">{{ editingPaiement ? 'Modifier le paiement' : 'Enregistrer un paiement' }}</h2></div><button class="icon-button modal-close" type="button" (click)="closeModal()" aria-label="Fermer">×</button></div>
+        <p class="modal-intro">Enregistrez le montant, la date et la référence de votre paiement.</p>
+        @if (modalErrorMessage) { <div class="alert error-alert" role="alert">{{ modalErrorMessage }}</div> }
+        <form (ngSubmit)="savePaiement()" #paiementForm="ngForm">
+          <label class="form-field"><span>Référence de réservation ou paiement <small>Obligatoire</small></span><input name="reference" [(ngModel)]="form.reference" placeholder="Ex. RES-2026-001" required /></label>
+          <div class="form-row">
+            <label class="form-field"><span>Montant <small>En dinars tunisiens</small></span><div class="weight-input"><input name="montant" type="number" [(ngModel)]="form.montant" min="0.01" step="0.01" required /><span>DT</span></div></label>
+            <label class="form-field"><span>Statut</span><select name="statut" [(ngModel)]="form.statut" required>@for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }</select></label>
+          </div>
+          <label class="form-field"><span>Date et heure du paiement</span><input name="datePaiement" type="datetime-local" [(ngModel)]="form.datePaiement" required /></label>
+          <div class="modal-actions"><button class="button button-secondary" type="button" (click)="closeModal()" [disabled]="saving">Annuler</button><button class="button button-primary" type="submit" [disabled]="saving || paiementForm.invalid">@if (saving) { <span class="button-loader"></span> Enregistrement... } @else { {{ editingPaiement ? 'Enregistrer les modifications' : 'Enregistrer le paiement' }} }</button></div>
+        </form>
+      </section>
+    </div>
+  }
+
+  @if (onlineCheckoutOpen) {
+    <div class="modal-backdrop" (click)="closeOnlineCheckout()">
+      <section class="modal-card checkout-card" role="dialog" aria-modal="true" aria-labelledby="checkout-title" (click)="$event.stopPropagation()">
+        <div class="modal-heading">
+          <div><p class="eyebrow">Paiement sécurisé</p><h2 id="checkout-title">Payer en ligne avec Paymee</h2></div>
+          <button class="icon-button modal-close" type="button" (click)="closeOnlineCheckout()" aria-label="Fermer">×</button>
+        </div>
+        <p class="modal-intro">Vous serez redirigé vers la page sécurisée de Paymee pour finaliser le paiement. Aucune donnée de carte bancaire n’est saisie ni stockée sur ce site.</p>
+        @if (modalErrorMessage) { <div class="alert error-alert" role="alert">{{ modalErrorMessage }}</div> }
+        <form (ngSubmit)="startOnlineCheckout()" #checkoutFormElement="ngForm">
+          <label class="form-field"><span>Référence de réservation <small>Obligatoire</small></span><input name="checkoutReference" [(ngModel)]="checkoutForm.reference" placeholder="Ex. RES-2026-001" maxlength="120" required /></label>
+          <div class="form-row">
+            <label class="form-field"><span>Montant <small>En dinars tunisiens</small></span><div class="weight-input"><input name="checkoutAmount" type="number" [(ngModel)]="checkoutForm.montant" min="0.01" step="0.01" required /><span>DT</span></div></label>
+            <label class="form-field"><span>Téléphone <small>Format international</small></span><input name="checkoutPhone" type="tel" [(ngModel)]="checkoutForm.phone" autocomplete="tel" placeholder="+216..." maxlength="30" required /></label>
+          </div>
+          <div class="form-row">
+            <label class="form-field"><span>Prénom</span><input name="firstName" [(ngModel)]="checkoutForm.firstName" autocomplete="given-name" maxlength="100" required /></label>
+            <label class="form-field"><span>Nom</span><input name="lastName" [(ngModel)]="checkoutForm.lastName" autocomplete="family-name" maxlength="100" required /></label>
+          </div>
+          <label class="form-field"><span>Adresse e-mail</span><input name="checkoutEmail" type="email" [(ngModel)]="checkoutForm.email" autocomplete="email" maxlength="254" required /></label>
+          <div class="secure-provider"><span aria-hidden="true">✓</span> Paiement traité par Paymee · Connexion sécurisée</div>
+          <div class="modal-actions"><button class="button button-secondary" type="button" (click)="closeOnlineCheckout()" [disabled]="startingCheckout">Annuler</button><button class="button button-primary" type="submit" [disabled]="startingCheckout || checkoutFormElement.invalid">@if (startingCheckout) { <span class="button-loader"></span> Redirection... } @else { Continuer vers Paymee <span aria-hidden="true">→</span> }</button></div>
+        </form>
+      </section>
+    </div>
+  }
+</div>
