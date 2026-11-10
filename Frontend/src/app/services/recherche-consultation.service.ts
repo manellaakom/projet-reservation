@@ -19,10 +19,11 @@ export class RechercheConsultationService {
 
   constructor(private http: HttpClient) {
     const savedUrl = localStorage.getItem('skyvoyage_api_url');
-    if (savedUrl && !savedUrl.includes('8082')) {
+    if (savedUrl && !savedUrl.includes('8082') && !savedUrl.includes('9082')) {
       this.apiUrl = savedUrl;
     } else {
       this.apiUrl = 'http://localhost:8080/api/recherche';
+      localStorage.setItem('skyvoyage_api_url', this.apiUrl);
     }
   }
 
@@ -66,6 +67,13 @@ export class RechercheConsultationService {
    */
   rechercherVoyages(criteres: CritereRecherche): Observable<VoyageOffre[]> {
     return this.http.post<VoyageOffre[]>(`${this.apiUrl}/voyages/search`, criteres);
+  }
+
+  /**
+   * 1b. Récupération directe de tous les voyages
+   */
+  getTousLesVoyages(): Observable<VoyageOffre[]> {
+    return this.http.get<VoyageOffre[]>(`${this.apiUrl}/voyages`);
   }
 
   /**

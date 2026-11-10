@@ -38,7 +38,7 @@
   <!-- 4 Statistiques Clés Simples -->
   <section class="simple-stats-grid">
     <!-- Stat 1 : Itinéraires -->
-    <div class="stat-card" routerLink="/voyages">
+    <div class="stat-card" [routerLink]="['/voyages']">
       <div class="stat-icon icon-blue">
         <i class="pi pi-map-marker"></i>
       </div>
@@ -50,19 +50,19 @@
     </div>
 
     <!-- Stat 2 : Meilleur Prix -->
-    <div class="stat-card" routerLink="/voyages">
+    <div class="stat-card" [routerLink]="['/voyages']" [queryParams]="{ sortBy: 'prix' }">
       <div class="stat-icon icon-amber">
         <i class="pi pi-tag"></i>
       </div>
       <div class="stat-content">
-        <div class="stat-number">{{ statsCatalogue?.prixMinimumCatalogue || 17.00 }} <span class="stat-unit">DT</span></div>
+        <div class="stat-number">{{ statsCatalogue?.prixMinimumCatalogue || 18.50 }} <span class="stat-unit">DT</span></div>
         <div class="stat-title">Tarifs à partir de</div>
         <div class="stat-sub">Prix les plus bas garantis en Dinars Tunisiens</div>
       </div>
     </div>
 
     <!-- Stat 3 : Promotions Actives -->
-    <div class="stat-card" routerLink="/voyages">
+    <div class="stat-card" [routerLink]="['/voyages']" [queryParams]="{ enPromotion: 'true' }">
       <div class="stat-icon icon-red">
         <i class="pi pi-percentage"></i>
       </div>
@@ -74,12 +74,12 @@
     </div>
 
     <!-- Stat 4 : Note Voyageurs -->
-    <div class="stat-card" routerLink="/voyages">
+    <div class="stat-card" [routerLink]="['/voyages']" [queryParams]="{ sortBy: 'noteMoyenne' }">
       <div class="stat-icon icon-green">
         <i class="pi pi-star"></i>
       </div>
       <div class="stat-content">
-        <div class="stat-number">{{ (statsCatalogue?.noteMoyenneGlobale || 4.61) | number:'1.1-1' }} <span class="stat-unit">/ 5</span></div>
+        <div class="stat-number">{{ (statsCatalogue?.noteMoyenneGlobale || 4.65) | number:'1.1-1' }} <span class="stat-unit">/ 5</span></div>
         <div class="stat-title">Avis & Satisfaction</div>
         <div class="stat-sub">Basé sur les avis clients certifiés</div>
       </div>
@@ -168,7 +168,7 @@
 
     <div class="modes-grid">
       <!-- Mode 1 : Vols -->
-      <a routerLink="/voyages" class="mode-card">
+      <a [routerLink]="['/voyages']" [queryParams]="{ typeTransport: 'VOL' }" class="mode-card">
         <div class="mode-icon mode-vol">
           <i class="pi pi-send"></i>
         </div>
@@ -178,7 +178,7 @@
       </a>
 
       <!-- Mode 2 : Trains -->
-      <a routerLink="/voyages" class="mode-card">
+      <a [routerLink]="['/voyages']" [queryParams]="{ typeTransport: 'TRAIN' }" class="mode-card">
         <div class="mode-icon mode-train">
           <i class="pi pi-bolt"></i>
         </div>
@@ -188,7 +188,7 @@
       </a>
 
       <!-- Mode 3 : Autocars -->
-      <a routerLink="/voyages" class="mode-card">
+      <a [routerLink]="['/voyages']" [queryParams]="{ typeTransport: 'BUS' }" class="mode-card">
         <div class="mode-icon mode-bus">
           <i class="pi pi-car"></i>
         </div>
@@ -198,7 +198,7 @@
       </a>
 
       <!-- Mode 4 : Ferries & Mer -->
-      <a routerLink="/voyages" class="mode-card">
+      <a [routerLink]="['/voyages']" [queryParams]="{ typeTransport: 'BATEAU' }" class="mode-card">
         <div class="mode-icon mode-bateau">
           <i class="pi pi-compass"></i>
         </div>
