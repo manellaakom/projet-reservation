@@ -11,11 +11,6 @@
     </a>
 
     <div class="topbar-actions">
-      <div class="backend-pill">
-        <span class="dot"></span>
-        <span>Gateway : 8080</span>
-      </div>
-
       <!-- Badge Utilisateur Global Connecté -->
       <div *ngIf="currentUser" class="topbar-user-badge" [class.admin-user]="currentUser.isAdmin">
         <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill' : 'pi-user'"></i>
