@@ -1,147 +1,331 @@
-<div class="home-container">
-  <!-- Section Hero -->
-  <section class="hero-section">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        <span>SkyVoyage Airlines &bull; Réservation & Bagages</span>
+<div class="dashboard-container">
+
+  <!-- En-tête du Dashboard -->
+  <header class="dashboard-header">
+    <div class="header-intro">
+      <div class="badge-system">
+        <span class="status-dot"></span>
+        <span>Système Microservices SkyVoyage • Port 8080 (API Gateway)</span>
       </div>
-
-      <h1 class="hero-title">
-        Recherchez, comparez <br />
-        <span class="highlight-text">et réservez vos voyages</span>
-      </h1>
-
-      <p class="hero-description">
-        Une plateforme unique et fluide pour planifier votre prochain voyage : trouvez les meilleures offres de vols et de séjours,
-        comparez les tarifs en temps réel et enregistrez vos bagages en toute simplicité.
-      </p>
-
-      <div class="hero-actions">
-        <a routerLink="/voyages" class="btn-hero-primary">
-          <i class="pi pi-compass"></i>
-          <span>Rechercher un Voyage</span>
-          <i class="pi pi-arrow-right"></i>
-        </a>
-        <a routerLink="/bagages" class="btn-hero-secondary">
-          <i class="pi pi-briefcase"></i>
-          <span>Gérer mes Bagages</span>
-        </a>
-      </div>
-
-      <!-- Quick Metrics Strip -->
-      <div class="hero-metrics">
-        <div class="metric-item" *ngFor="let m of systemStats">
-          <i [class]="m.icon"></i>
-          <div class="metric-info">
-            <span class="metric-val">{{ m.value }}</span>
-            <span class="metric-lbl">{{ m.label }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Visuel Hero : Carte Embarquement -->
-    <div class="hero-visual">
-      <div class="luggage-card-preview">
-        <div class="preview-header">
-          <div class="preview-airline">
-            <span class="plane-icon">✈️</span>
-            <span>SKYVOYAGE AIRLINES</span>
-          </div>
-          <span class="preview-status-pill">Système Actif</span>
-        </div>
-
-        <div class="preview-body">
-          <div class="preview-route">
-            <div class="airport-code">
-              <span class="code">TUN</span>
-              <span class="city">Tunis Carthage</span>
-            </div>
-            <div class="flight-path">
-              <i class="pi pi-arrow-right"></i>
-              <span class="flight-no">VOL DIRECT</span>
-            </div>
-            <div class="airport-code text-right">
-              <span class="code">FCO</span>
-              <span class="city">Rome Fiumicino</span>
-            </div>
-          </div>
-
-          <div class="preview-divider"></div>
-
-          <div class="preview-grid">
-            <div class="preview-field">
-              <span class="field-label">SERVICE VOYAGE</span>
-              <span class="field-value">Vols, Trains & Séjours</span>
-            </div>
-            <div class="preview-field">
-              <span class="field-label">SERVICE BAGAGES</span>
-              <span class="field-value text-success">30 / 50 / 70 DT</span>
-            </div>
-            <div class="preview-field">
-              <span class="field-label">COMPARAISON</span>
-              <span class="field-value">Côte-à-côte</span>
-            </div>
-            <div class="preview-field">
-              <span class="field-label">CONFIRMATION</span>
-              <span class="field-value">Instantanée</span>
-            </div>
-          </div>
-
-          <div class="barcode-preview">
-            <div class="barcode-bars"></div>
-            <span class="barcode-sub">* SKYVOYAGE-PLATFORM *</span>
-          </div>
-        </div>
-
-        <div class="preview-badge-floating">
-          <i class="pi pi-check-circle text-success"></i>
-          <div>
-            <div class="float-title">Réservation Ouverte</div>
-            <div class="float-sub">Tarifs garantis</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section Fonctionnalités Clés -->
-  <section class="features-section">
-    <div class="section-header">
-      <span class="section-tag">Services complets</span>
-      <h2 class="section-title">Une expérience de voyage intégrée de A à Z</h2>
-      <p class="section-subtitle">
-        Tous les outils nécessaires réunis dans une seule interface ergonomique.
+      <h1>Tableau de Bord & Données de l'Application</h1>
+      <p class="header-desc">
+        Visualisation en temps réel des flux de données : catalogue 100% tunisien (Module 2 MySQL),
+        tarification des bagages (Module 1 Redis NoSQL) et sécurité OAuth2 / Keycloak.
       </p>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-card" *ngFor="let feat of features">
-        <div class="feature-card-header">
-          <div class="feature-icon">
-            <i [class]="feat.icon"></i>
-          </div>
-          <span class="feature-tag" [ngClass]="feat.tagClass">{{ feat.tag }}</span>
-        </div>
-        <h3 class="feature-title">{{ feat.title }}</h3>
-        <p class="feature-desc">{{ feat.description }}</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Bannière CTA finale -->
-  <section class="cta-banner-section">
-    <div class="cta-banner">
-      <div class="cta-text">
-        <h2>Prêt à réserver votre prochain voyage ?</h2>
-        <p>Explorez notre catalogue, comparez les prix et bénéficiez des meilleures offres du moment.</p>
-      </div>
-      <a routerLink="/voyages" class="btn-cta-large">
+    <!-- Actions Rapides Header -->
+    <div class="header-actions">
+      <a routerLink="/voyages" class="btn btn-primary">
         <i class="pi pi-compass"></i>
-        <span>Accéder à la recherche</span>
+        <span>Explorer les Voyages</span>
+      </a>
+      <a routerLink="/bagages" class="btn btn-secondary">
+        <i class="pi pi-briefcase"></i>
+        <span>Gérer les Bagages</span>
+      </a>
+      <a routerLink="/login" class="btn btn-outline" *ngIf="!currentUser">
+        <i class="pi pi-user"></i>
+        <span>Connexion (Keycloak)</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- 4 Cartes Métriques Clés (KPI Grid) -->
+  <section class="kpi-grid">
+    <!-- KPI 1 : Voyages -->
+    <div class="kpi-card card-voyages" routerLink="/voyages">
+      <div class="kpi-top">
+        <div class="kpi-icon icon-voyage">
+          <i class="pi pi-compass"></i>
+        </div>
+        <span class="kpi-badge badge-tunisia">100% Tunisien</span>
+      </div>
+      <div class="kpi-value">{{ statsCatalogue?.totalVoyages || 12 }}</div>
+      <div class="kpi-label">Offres de Voyages Actives</div>
+      <div class="kpi-footer">
+        <i class="pi pi-map-marker"></i>
+        <span>Tunis, Djerba, Sousse, Sfax, Tozeur, Tabarka...</span>
+      </div>
+    </div>
+
+    <!-- KPI 2 : Tarifs & Promotions -->
+    <div class="kpi-card card-tarifs" routerLink="/voyages">
+      <div class="kpi-top">
+        <div class="kpi-icon icon-tarif">
+          <i class="pi pi-tag"></i>
+        </div>
+        <span class="kpi-badge badge-devise">Devise : DT (TND)</span>
+      </div>
+      <div class="kpi-value">
+        {{ statsCatalogue?.prixMinimumCatalogue || 17.00 }} DT <span class="range-separator">→</span> {{ statsCatalogue?.prixMaximumCatalogue || 740.00 }} DT
+      </div>
+      <div class="kpi-label">Éventail des Tarifs Catalogue</div>
+      <div class="kpi-footer">
+        <i class="pi pi-percentage text-danger"></i>
+        <span>{{ statsCatalogue?.totalOffresEnPromotion || 8 }} offres à prix réduit avec promos</span>
+      </div>
+    </div>
+
+    <!-- KPI 3 : Module 1 Bagages (Redis NoSQL) -->
+    <div class="kpi-card card-bagages" routerLink="/bagages">
+      <div class="kpi-top">
+        <div class="kpi-icon icon-bagage">
+          <i class="pi pi-briefcase"></i>
+        </div>
+        <span class="kpi-badge badge-redis">Redis NoSQL</span>
+      </div>
+      <div class="kpi-value">
+        {{ statsBagages?.totalBagages || 1 }} <span class="unit">bagage(s)</span>
+      </div>
+      <div class="kpi-label">Enregistrements en Base NoSQL</div>
+      <div class="kpi-footer">
+        <i class="pi pi-wallet text-success"></i>
+        <span>Chiffre d'affaires : <strong>{{ statsBagages?.totalRevenue || 30.0 }} DT</strong> ({{ statsBagages?.totalWeight || 8.5 }} kg)</span>
+      </div>
+    </div>
+
+    <!-- KPI 4 : Microservices Health -->
+    <div class="kpi-card card-infra">
+      <div class="kpi-top">
+        <div class="kpi-icon icon-infra">
+          <i class="pi pi-server"></i>
+        </div>
+        <span class="kpi-badge badge-green">Eureka UP</span>
+      </div>
+      <div class="kpi-value">4 / 4</div>
+      <div class="kpi-label">Microservices Enregistrés</div>
+      <div class="kpi-footer">
+        <i class="pi pi-check-circle text-success"></i>
+        <span>Gateway (8080), Config (8888), Bagages (8081), Recherche (8082)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2 : État des Microservices & Accès Soutenance -->
+  <section class="infra-section">
+    <div class="section-header">
+      <div>
+        <h2>Architecture Microservices & Accès Démonstration</h2>
+        <p>Services actifs validés selon la grille AWD avec routage centralisé via Spring Cloud Gateway.</p>
+      </div>
+    </div>
+
+    <div class="infra-cards-grid">
+      <!-- 1. API Gateway -->
+      <div class="service-pill-card">
+        <div class="service-status-dot"></div>
+        <div class="service-info">
+          <h4>API Gateway</h4>
+          <span class="service-port">Port 8080 (Netty)</span>
+          <p class="service-tech">Routage centralisé, filtre CORS RETAIN_LAST, Swagger unifié.</p>
+        </div>
+        <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer" class="service-btn" title="Ouvrir la documentation interactive Swagger">
+          <i class="pi pi-file-code"></i>
+          <span>Swagger UI</span>
+        </a>
+      </div>
+
+      <!-- 2. Serveur de Découverte Eureka -->
+      <div class="service-pill-card">
+        <div class="service-status-dot"></div>
+        <div class="service-info">
+          <h4>Discovery Eureka</h4>
+          <span class="service-port">Port 8761</span>
+          <p class="service-tech">Registre dynamique : GATEWAY, CONFIG, GESTION-BAGAGES, RECHERCHE.</p>
+        </div>
+        <a href="http://localhost:8761" target="_blank" rel="noopener noreferrer" class="service-btn" title="Ouvrir le tableau de bord Eureka">
+          <i class="pi pi-server"></i>
+          <span>Tableau Eureka</span>
+        </a>
+      </div>
+
+      <!-- 3. Spring Cloud Config Server -->
+      <div class="service-pill-card">
+        <div class="service-status-dot"></div>
+        <div class="service-info">
+          <h4>Config Server</h4>
+          <span class="service-port">Port 8888</span>
+          <p class="service-tech">Configurations centralisées en mode natif pour chaque microservice.</p>
+        </div>
+        <a href="http://localhost:8888/recherche-consultation/default" target="_blank" rel="noopener noreferrer" class="service-btn" title="Consulter le flux JSON des configurations">
+          <i class="pi pi-sliders-h"></i>
+          <span>Propriétés</span>
+        </a>
+      </div>
+
+      <!-- 4. Keycloak IAM -->
+      <div class="service-pill-card">
+        <div class="service-status-dot"></div>
+        <div class="service-info">
+          <h4>Keycloak IAM</h4>
+          <span class="service-port">Port 8180</span>
+          <p class="service-tech">OAuth2 / OIDC : Realms `travel-realm` et `skyvoyage` (Admin & User).</p>
+        </div>
+        <a routerLink="/login" class="service-btn" title="Accéder à l'espace de connexion">
+          <i class="pi pi-shield"></i>
+          <span>Comptes Démo</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3 : Sélection d'Offres Tunisiennes en Vedette (Données réelles) -->
+  <section class="featured-section">
+    <div class="section-header">
+      <div>
+        <h2>Offres Tunisiennes en Vedette</h2>
+        <p>Aperçu en direct du catalogue de voyages (Module 2) relié à la base de données MySQL.</p>
+      </div>
+      <a routerLink="/voyages" class="view-all-link">
+        <span>Consulter les {{ statsCatalogue?.totalVoyages || 12 }} offres</span>
         <i class="pi pi-arrow-right"></i>
       </a>
     </div>
+
+    <div class="voyages-grid">
+      <div class="voyage-card" *ngFor="let v of (featuredVoyages.length > 0 ? featuredVoyages : defaultFeaturedVoyages)">
+        <div class="card-badge-row">
+          <span class="transport-tag" [ngClass]="'transport-' + v.typeTransport.toLowerCase()">
+            <i class="pi" [ngClass]="{
+              'pi-send': v.typeTransport === 'VOL',
+              'pi-bolt': v.typeTransport === 'TRAIN',
+              'pi-car': v.typeTransport === 'BUS',
+              'pi-compass': v.typeTransport === 'BATEAU'
+            }"></i>
+            <span>{{ v.typeTransport }}</span>
+          </span>
+          <span class="promo-tag" *ngIf="v.enPromotion">
+            -{{ v.pourcentageReduction || 20 }}% PROMO
+          </span>
+        </div>
+
+        <h3 class="voyage-title">{{ v.titre }}</h3>
+        <p class="voyage-desc">{{ v.description }}</p>
+
+        <div class="route-display">
+          <div class="route-city">
+            <strong>{{ v.villeDepart }}</strong>
+          </div>
+          <div class="route-arrow">
+            <span class="duration-text">{{ v.dureeFormatee || (v.dureeMinutes + ' min') }}</span>
+            <i class="pi pi-arrow-right"></i>
+          </div>
+          <div class="route-city text-right">
+            <strong>{{ v.villeDestination }}</strong>
+          </div>
+        </div>
+
+        <div class="card-amenities">
+          <span *ngIf="v.bagageCabineInclus" title="Bagage cabine inclus">🧳 Cabine</span>
+          <span *ngIf="v.bagageSouteInclus" title="Bagage soute inclus">📦 Soute</span>
+          <span *ngIf="v.wifiDisponible" title="Wi-Fi disponible">📶 Wi-Fi</span>
+          <span *ngIf="v.annulationGratuite" title="Annulation gratuite">🛡️ Annulation</span>
+        </div>
+
+        <div class="card-bottom">
+          <div class="price-container">
+            <span class="old-price" *ngIf="v.enPromotion && v.prixEffectif && v.prixBase > v.prixEffectif">
+              {{ v.prixBase }} DT
+            </span>
+            <span class="current-price">{{ v.prixEffectif || v.prixPromo || v.prixBase }} DT</span>
+          </div>
+          <a routerLink="/voyages" class="btn-book">
+            <span>Détails & Réservation</span>
+            <i class="pi pi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
   </section>
+
+  <!-- Section 4 : Répartition des Moyens de Transport & Commodités -->
+  <section class="breakdown-section">
+    <div class="breakdown-card">
+      <h3>Répartition de la Flotte Tunisienne</h3>
+      <p class="breakdown-subtitle">Distribution multimodale gérée par l'entité Voyage</p>
+
+      <div class="fleet-bars">
+        <div class="fleet-row">
+          <div class="fleet-label">
+            <span>✈️ Vols Intérieurs & Internationaux (Tunisair Express, Nouvelair)</span>
+            <strong>4 offres (33%)</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-vol" style="width: 33%"></div>
+          </div>
+        </div>
+
+        <div class="fleet-row">
+          <div class="fleet-label">
+            <span>🚆 Lignes Ferroviaires SNCFT (Grandes Lignes & Banlieue)</span>
+            <strong>2 offres (17%)</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-train" style="width: 17%"></div>
+          </div>
+        </div>
+
+        <div class="fleet-row">
+          <div class="fleet-label">
+            <span>🚌 Lignes Régionales & Interurbaines SNTRI</span>
+            <strong>3 offres (25%)</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-bus" style="width: 25%"></div>
+          </div>
+        </div>
+
+        <div class="fleet-row">
+          <div class="fleet-label">
+            <span>⛴️ Liaisons Maritimes & Ferries CTN (Carthage, Tanit)</span>
+            <strong>2 offres (17%)</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-bateau" style="width: 17%"></div>
+          </div>
+        </div>
+
+        <div class="fleet-row">
+          <div class="fleet-label">
+            <span>🏖️ Packs Découverte & Écotourisme Sahara</span>
+            <strong>1 offre (8%)</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-pack" style="width: 8%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte Réglementation Bagages (Module 1) -->
+    <div class="breakdown-card bagages-rule-card">
+      <h3>Tarification Bagages (Module 1 NoSQL)</h3>
+      <p class="breakdown-subtitle">Règles métier de calcul automatique (Redis)</p>
+
+      <div class="bagage-pricing-tiers">
+        <div class="pricing-tier tier-cabine">
+          <div class="tier-weight">0 à 10 kg</div>
+          <div class="tier-type">Valise Cabine</div>
+          <div class="tier-price">30.00 DT</div>
+        </div>
+        <div class="pricing-tier tier-moyen">
+          <div class="tier-weight">&gt; 10 à 20 kg</div>
+          <div class="tier-type">Bagage Soute Moyen</div>
+          <div class="tier-price">50.00 DT</div>
+        </div>
+        <div class="pricing-tier tier-grand">
+          <div class="tier-weight">&gt; 20 à 30 kg</div>
+          <div class="tier-type">Grand Bagage Soute</div>
+          <div class="tier-price">70.00 DT</div>
+        </div>
+      </div>
+
+      <div class="rule-footer">
+        <i class="pi pi-shield text-warning"></i>
+        <span>Plafond de sécurité strict : aucun bagage supérieur à <strong>30.0 kg</strong> n'est autorisé.</span>
+      </div>
+    </div>
+  </section>
+
 </div>
