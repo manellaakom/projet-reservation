@@ -22,9 +22,12 @@ public class GatewayApplication {
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("bagages", route -> route.path("/api/bagages/**")
+                        .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_UNIQUE")
+                                       .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_UNIQUE"))
                         .uri("lb://gestion-bagages"))
                 .route("bagages-v3-docs", route -> route.path("/v3/api-docs/bagages")
-                        .filters(f -> f.rewritePath("/v3/api-docs/bagages", "/v3/api-docs"))
+                        .filters(f -> f.rewritePath("/v3/api-docs/bagages", "/v3/api-docs")
+                                       .dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_UNIQUE"))
                         .uri("lb://gestion-bagages"))
                 .route("swagger-ui-shortcut", route -> route.path("/swagger-ui/index.html", "/swagger-ui/**")
                         .filters(f -> f.redirect(302, "/swagger-ui.html"))
@@ -41,10 +44,12 @@ public class GatewayApplication {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://127.0.0.1:4200"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(false);
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

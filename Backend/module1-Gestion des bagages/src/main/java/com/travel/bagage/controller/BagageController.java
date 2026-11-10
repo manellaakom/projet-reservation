@@ -49,7 +49,7 @@ public class BagageController {
         return ResponseEntity.ok(bagageService.getAllBagages());
     }
 
-    @GetMapping("/statistics")
+    @GetMapping({"/statistics", "/statistiques"})
     @PreAuthorize("hasAnyRole('admin', 'ADMIN')")
     @Operation(summary = "Obtenir les statistiques", description = "Fournit le total bagages, poids cumulé, revenu estimé et moyennes")
     public ResponseEntity<BagageStatisticsResponse> getStatistics() {

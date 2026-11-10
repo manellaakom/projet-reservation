@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { BagageService } from '../../services/bagage.service';
+import { AuthService, UserProfile } from '../../services/auth.service';
 import { Bagage, BagageRequest, BagageStatistics } from '../../models/bagage.model';
 
 interface ToastNotification {
@@ -70,6 +71,18 @@ export class BagagesComponent implements OnInit {
   loading: boolean = false;
   error: string | null = null;
 
+  // Authentification
+  showLoginModal: boolean = false;
+  loginUsername: string = '';
+  loginPassword: string = '';
+  loginError: string | null = null;
+  loginLoading: boolean = false;
+  currentUser: UserProfile | null = null;
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   // Filtres et Tri avancés
   searchTerm: string = '';
   selectedStatutFilter: string = 'ALL';
@@ -124,6 +137,7 @@ export class BagagesComponent implements OnInit {
 
   constructor(
     private bagageService: BagageService,
+    private authService: AuthService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
     private appRef: ApplicationRef
@@ -132,7 +146,12 @@ export class BagagesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadAllData();
+    this.currentUser = this.authService.getCurrentUser();
+    if (this.authService.isAuthenticated()) {
+      this.loadAllData();
+    } else {
+      this.showLoginModal = true;
+    }
   }
 
   /**
@@ -203,6 +222,7 @@ export class BagagesComponent implements OnInit {
   // --- Actions Modales Analytiques ---
 
   openWeightDetailModal(): void {
+    if (!this.isAdmin) return;
     this.showWeightDetailModal = true;
     this.triggerChangeDetection();
   }
@@ -213,6 +233,7 @@ export class BagagesComponent implements OnInit {
   }
 
   openRevenueDetailModal(): void {
+    if (!this.isAdmin) return;
     this.showRevenueDetailModal = true;
     this.triggerChangeDetection();
   }
@@ -223,6 +244,7 @@ export class BagagesComponent implements OnInit {
   }
 
   openAverageWeightDetailModal(): void {
+    if (!this.isAdmin) return;
     this.showAverageWeightDetailModal = true;
     this.triggerChangeDetection();
   }
@@ -324,32 +346,107 @@ export class BagagesComponent implements OnInit {
       next: (data) => {
         this.bagages = data || [];
         this.applyFilter();
-        this.computeFallbackStats();
-        this.loadStatistics();
+        if (this.isAdmin) {
+          this.computeFallbackStats();
+          this.loadStatistics();
+        } else {
+          this.statistics = null;
+        }
         this.triggerChangeDetection();
       },
       error: (err) => {
         console.error('Erreur Gateway bagages:', err);
-        const errMsg = this.extractErrorMessage(err);
-        this.error = `Communication Gateway interrompue (port 8080) : ${errMsg}`;
-        this.showToast('error', 'Erreur de connexion', this.error);
+        if (err.status === 401 || err.status === 0) {
+          this.showLoginModal = true;
+          this.error = null;
+        } else {
+          const errMsg = this.extractErrorMessage(err);
+          this.error = `Communication Gateway interrompue (port 8080) : ${errMsg}`;
+          this.showToast('error', 'Erreur de connexion', this.error);
+        }
         this.triggerChangeDetection();
       }
     });
   }
 
+  // --- Authentification ---
+
+  openLoginModal(): void {
+    this.showLoginModal = true;
+    this.loginError = null;
+    this.loginUsername = '';
+    this.loginPassword = '';
+    this.triggerChangeDetection();
+  }
+
+  closeLoginModal(): void {
+    this.showLoginModal = false;
+    this.loginError = null;
+    this.triggerChangeDetection();
+  }
+
+  submitLogin(): void {
+    if (!this.loginUsername || !this.loginPassword) {
+      this.loginError = 'Identifiant et mot de passe sont requis.';
+      return;
+    }
+    this.loginLoading = true;
+    this.loginError = null;
+    this.triggerChangeDetection();
+
+    this.authService.login(this.loginUsername, this.loginPassword).subscribe({
+      next: () => {
+        this.currentUser = this.authService.getCurrentUser();
+        this.loginLoading = false;
+        this.showLoginModal = false;
+        this.loginPassword = '';
+        this.statistics = null;
+        this.showToast('success', 'Connecté',
+          `Bienvenue, ${this.currentUser?.username ?? 'utilisateur'} (${this.currentUser?.isAdmin ? 'Administrateur' : 'Voyageur'})`);
+        this.loadAllData();
+        this.triggerChangeDetection();
+      },
+      error: (err) => {
+        this.loginLoading = false;
+        if (err.status === 401) {
+          this.loginError = 'Identifiant ou mot de passe incorrect.';
+        } else {
+          this.loginError = 'Impossible de joindre Keycloak. Vérifiez que Docker est actif.';
+        }
+        this.triggerChangeDetection();
+      }
+    });
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.currentUser = null;
+    this.bagages = [];
+    this.filteredBagages = [];
+    this.statistics = null;
+    this.showToast('info', 'Déconnecté', 'Vous avez été déconnecté de la session.');
+    this.showLoginModal = true;
+    this.triggerChangeDetection();
+  }
+
   loadStatistics(): void {
+    if (!this.isAdmin) {
+      this.statistics = null;
+      return;
+    }
     this.bagageService.getStatistics().subscribe({
       next: (stats) => {
-        if (stats) {
+        if (this.isAdmin && stats) {
           this.statistics = stats;
           this.triggerChangeDetection();
         }
       },
       error: (err) => {
-        console.warn('Statistiques backend directes non disponibles, calcul local:', err);
-        this.computeFallbackStats(true);
-        this.triggerChangeDetection();
+        if (this.isAdmin) {
+          console.warn('Statistiques backend directes non disponibles, calcul local:', err);
+          this.computeFallbackStats(true);
+          this.triggerChangeDetection();
+        }
       }
     });
   }
@@ -519,6 +616,10 @@ export class BagagesComponent implements OnInit {
    * Export des bagages filtrés au format CSV compatible Microsoft Excel (UTF-8 avec BOM, séparateur point-virgule)
    */
   exportToCsv(): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'L\'export CSV est réservé aux administrateurs.');
+      return;
+    }
     const list = this.filteredBagages;
     if (!list || list.length === 0) {
       this.showToast('info', 'Export CSV', 'Aucun bagage à exporter selon les filtres actifs.');
@@ -570,6 +671,10 @@ export class BagagesComponent implements OnInit {
   }
 
   openHistoryModal(): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'L\'historique des opérations est réservé aux administrateurs.');
+      return;
+    }
     this.showHistoryModal = true;
     this.triggerChangeDetection();
   }
@@ -591,6 +696,7 @@ export class BagagesComponent implements OnInit {
    * Si 'REGISTER' ou 'PENDING' : filtre sur le statut correspondant (toggle si déjà sélectionné)
    */
   filterByCard(statut: string): void {
+    if (!this.isAdmin) return;
     if (statut === 'ALL') {
       this.selectedStatutFilter = 'ALL';
       this.searchTerm = '';
@@ -609,6 +715,10 @@ export class BagagesComponent implements OnInit {
   // --- Actions CRUD ---
 
   openCreateModal(): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Seul un administrateur peut enregistrer un nouveau bagage.');
+      return;
+    }
     this.isEditMode = false;
     this.currentBagageId = null;
     this.formError = null;
@@ -624,6 +734,10 @@ export class BagagesComponent implements OnInit {
   }
 
   openEditModal(bagage: Bagage): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Seul un administrateur peut modifier un bagage.');
+      return;
+    }
     this.isEditMode = true;
     this.currentBagageId = bagage.id;
     this.formError = null;
@@ -713,6 +827,10 @@ export class BagagesComponent implements OnInit {
   }
 
   openAssociateModal(bagage: Bagage): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Seul un administrateur peut associer un bagage.');
+      return;
+    }
     this.bagageToAssociate = bagage;
     this.targetReservationId = bagage.reservationId || '';
     this.associateError = null;
@@ -722,13 +840,17 @@ export class BagagesComponent implements OnInit {
   }
 
   openAssociateFromDetail(): void {
-    if (!this.selectedBagage) return;
+    if (!this.isAdmin || !this.selectedBagage) return;
     const b = this.selectedBagage;
     this.closeDetailModal();
     this.openAssociateModal(b);
   }
 
   confirmAssociation(): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Opération réservée aux administrateurs.');
+      return;
+    }
     if (!this.bagageToAssociate || !this.targetReservationId.trim() || this.associating) {
       return;
     }
@@ -759,12 +881,20 @@ export class BagagesComponent implements OnInit {
   }
 
   openDeleteModal(bagage: Bagage): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Seul un administrateur peut supprimer un bagage.');
+      return;
+    }
     this.bagageToDelete = bagage;
     this.showDeleteModal = true;
     this.triggerChangeDetection();
   }
 
   confirmDelete(): void {
+    if (!this.isAdmin) {
+      this.showToast('error', 'Accès refusé', 'Opération réservée aux administrateurs.');
+      return;
+    }
     if (!this.bagageToDelete) return;
 
     const id = this.bagageToDelete.id;

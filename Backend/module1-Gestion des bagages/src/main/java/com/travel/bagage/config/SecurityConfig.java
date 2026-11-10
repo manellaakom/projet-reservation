@@ -19,9 +19,6 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -40,7 +37,7 @@ public class SecurityConfig {
 
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 1. Endpoints publics : Documentation OpenAPI, Swagger UI et Actuator (monitoring)
@@ -52,7 +49,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // 2. Statistiques : réservé exclusivement au rôle admin
-                .requestMatchers(HttpMethod.GET, "/api/bagages/statistics").hasAnyRole("admin", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/bagages/statistics", "/api/bagages/statistiques").hasAnyRole("admin", "ADMIN")
 
                 // 3. Consultation des bagages (liste, détail, recherche réservation, tests Feign) : accessible aux utilisateurs et administrateurs
                 .requestMatchers(HttpMethod.GET, "/api/bagages/**").hasAnyRole("user", "USER", "admin", "ADMIN")
@@ -93,16 +90,5 @@ public class SecurityConfig {
 
         jwtDecoder.setJwtValidator(validator);
         return jwtDecoder;
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

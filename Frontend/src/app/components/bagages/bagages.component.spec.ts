@@ -4,12 +4,14 @@ import { of, throwError } from 'rxjs';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { BagagesComponent } from './bagages.component';
 import { BagageService } from '../../services/bagage.service';
+import { AuthService } from '../../services/auth.service';
 import { Bagage, BagageStatistics } from '../../models/bagage.model';
 
 describe('BagagesComponent', () => {
   let component: BagagesComponent;
   let fixture: ComponentFixture<BagagesComponent>;
   let bagageService: BagageService;
+  let authService: AuthService;
 
   const mockBagages: Bagage[] = [
     { id: 'b1', reservationId: 'RES-001', type: 'CABINE', poids: 9.0, statut: 'REGISTERED', prix: 30.0 },
@@ -28,12 +30,20 @@ describe('BagagesComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BagagesComponent, HttpClientTestingModule],
-      providers: [BagageService]
+      providers: [BagageService, AuthService]
     }).compileComponents();
 
     fixture = TestBed.createComponent(BagagesComponent);
     component = fixture.componentInstance;
     bagageService = TestBed.inject(BagageService);
+    authService = TestBed.inject(AuthService);
+
+    // Simuler un utilisateur authentifié administrateur par défaut pour la suite existante
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(authService, 'isAdmin').mockReturnValue(true);
+    vi.spyOn(authService, 'getCurrentUser').mockReturnValue({
+      username: 'admin', roles: ['admin', 'user'], isAdmin: true, isUser: true
+    });
   });
 
   it('should create the component and initialize the form', () => {
@@ -508,6 +518,59 @@ describe('BagagesComponent', () => {
 
       component.closeHistoryModal();
       expect(component.showHistoryModal).toBe(false);
+    });
+  });
+
+  describe('Contrôle d accès basé sur les rôles Keycloak (Admin vs Voyageur)', () => {
+    it('pour le compte voyageur (role user) : les statistiques restent nulles et les actions CRUD sont bloquées', () => {
+      // Configuration voyageur
+      vi.spyOn(authService, 'isAdmin').mockReturnValue(false);
+      vi.spyOn(authService, 'getCurrentUser').mockReturnValue({
+        username: 'voyageur', roles: ['user'], isAdmin: false, isUser: true
+      });
+      vi.spyOn(bagageService, 'getAllBagages').mockReturnValue(of(mockBagages));
+      const statsSpy = vi.spyOn(bagageService, 'getStatistics');
+
+      component.loadAllData();
+
+      // Consultation autorisée
+      expect(component.bagages.length).toBe(2);
+      expect(component.filteredBagages.length).toBe(2);
+
+      // Statistiques non chargées et nulles pour voyageur
+      expect(statsSpy).not.toHaveBeenCalled();
+      expect(component.statistics).toBeNull();
+
+      // Actions interdites bloquées
+      component.openCreateModal();
+      expect(component.showFormModal).toBe(false);
+
+      component.openEditModal(mockBagages[0]);
+      expect(component.showFormModal).toBe(false);
+
+      component.openDeleteModal(mockBagages[0]);
+      expect(component.showDeleteModal).toBe(false);
+
+      component.openAssociateModal(mockBagages[0]);
+      expect(component.showAssociateModal).toBe(false);
+
+      component.exportToCsv();
+      // Pas de crash et toast d'erreur
+      expect(component.toasts.some(t => t.type === 'error')).toBe(true);
+    });
+
+    it('la déconnexion vide complètement les statistiques et données en cache', () => {
+      component.statistics = mockStats;
+      component.bagages = mockBagages;
+      component.filteredBagages = mockBagages;
+
+      component.logout();
+
+      expect(component.statistics).toBeNull();
+      expect(component.bagages.length).toBe(0);
+      expect(component.filteredBagages.length).toBe(0);
+      expect(component.currentUser).toBeNull();
+      expect(component.showLoginModal).toBe(true);
     });
   });
 });
