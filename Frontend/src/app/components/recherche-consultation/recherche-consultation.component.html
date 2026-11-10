@@ -37,7 +37,7 @@
       <i class="pi pi-refresh" [ngClass]="{'pi-spin': loading}"></i>
       <span>Actualiser</span>
     </button>
-    <button class="btn btn-primary" (click)="ouvrirModalCreation()">
+    <button *ngIf="isAdmin" class="btn btn-primary" (click)="ouvrirModalCreation()">
       <i class="pi pi-plus"></i>
       <span>Nouveau Voyage</span>
     </button>
@@ -299,8 +299,12 @@
             <i class="pi" [ngClass]="isSelectedForCompare(v.id) ? 'pi-check-circle text-primary' : 'pi-sliders-h'"></i>
           </button>
           <button class="btn btn-sm btn-outline" (click)="consulterVoyage(v.id)">Détails</button>
-          <button class="btn btn-sm btn-secondary" (click)="ouvrirModalModification(v)" title="Modifier (Token requis)"><i class="pi pi-pencil"></i></button>
-          <button class="btn btn-sm btn-danger-outline" (click)="supprimerVoyage(v.id, v.titre)" title="Supprimer (ROLE_ADMIN requis)"><i class="pi pi-trash"></i></button>
+          <button class="btn btn-sm btn-primary" (click)="reserverVoyage(v)" title="Réserver ce voyage">
+            <i class="pi pi-bookmark"></i>
+            <span>Réserver</span>
+          </button>
+          <button *ngIf="isAdmin" class="btn btn-sm btn-secondary" (click)="ouvrirModalModification(v)" title="Modifier (Admin)"><i class="pi pi-pencil"></i></button>
+          <button *ngIf="isAdmin" class="btn btn-sm btn-danger-outline" (click)="supprimerVoyage(v.id, v.titre)" title="Supprimer (Admin)"><i class="pi pi-trash"></i></button>
         </div>
       </div>
     </div>
@@ -363,8 +367,12 @@
 
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="fermerDetailsModal()">Fermer</button>
-      <button class="btn btn-primary" (click)="toggleSelectCompare(offreConsultee.id); fermerDetailsModal()">
+      <button class="btn btn-outline" (click)="toggleSelectCompare(offreConsultee.id); fermerDetailsModal()">
         {{ isSelectedForCompare(offreConsultee.id) ? 'Retirer du comparateur' : 'Ajouter au comparateur' }}
+      </button>
+      <button class="btn btn-primary" (click)="reserverVoyage(offreConsultee); fermerDetailsModal()">
+        <i class="pi pi-check"></i>
+        <span>Réserver Maintenant ({{ (offreConsultee.prixEffectif || offreConsultee.prixBase) | number:'1.2-2' }} DT)</span>
       </button>
     </div>
   </div>

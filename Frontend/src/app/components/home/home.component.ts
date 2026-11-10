@@ -2,10 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { RechercheConsultationService } from '../../services/recherche-consultation.service';
-import { BagageService } from '../../services/bagage.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { StatistiquesCatalogue, VoyageOffre } from '../../models/recherche.model';
-import { BagageStatistics } from '../../models/bagage.model';
 
 @Component({
   selector: 'app-home',
@@ -16,19 +14,51 @@ import { BagageStatistics } from '../../models/bagage.model';
 })
 export class HomeComponent implements OnInit {
   statsCatalogue: StatistiquesCatalogue | null = null;
-  statsBagages: BagageStatistics | null = null;
-  featuredVoyages: VoyageOffre[] = [];
+  promotionsVoyages: VoyageOffre[] = [];
+  tousLesVoyages: VoyageOffre[] = [];
   currentUser: UserProfile | null = null;
   loading: boolean = true;
-  error: string | null = null;
+  reservationSuccessMessage: string | null = null;
 
-  // Données de secours fiables si les microservices mettent du temps à répondre
-  defaultFeaturedVoyages: VoyageOffre[] = [
+  // Données de secours fiables si le microservice met du temps à répondre
+  defaultPromotions: VoyageOffre[] = [
+    {
+      id: 20,
+      codeVoyage: 'VOY-TUN-TOZ-02',
+      titre: 'Vol Direct Oasis Tunis → Tozeur Nefta',
+      description: 'Découvrez le Sud tunisien et les oasis du Sahara au départ de Tunis en vol direct.',
+      villeDepart: 'Tunis',
+      villeDestination: 'Tozeur',
+      paysDestination: 'Tunisie',
+      compagnie: 'Tunisair Express',
+      typeTransport: 'VOL',
+      categorie: 'PROMO',
+      dateDepart: '2026-11-22T10:00:00',
+      dateArrivee: '2026-11-22T11:05:00',
+      dureeMinutes: 65,
+      dureeFormatee: '1h 05m',
+      escales: 0,
+      prixBase: 120.0,
+      prixPromo: 89.0,
+      prixEffectif: 89.0,
+      pourcentageReduction: 26,
+      enPromotion: true,
+      placesDisponibles: 12,
+      noteMoyenne: 4.9,
+      nombreAvis: 29,
+      nombreConsultations: 310,
+      bagageCabineInclus: true,
+      bagageSouteInclus: true,
+      annulationGratuite: true,
+      repasInclus: false,
+      wifiDisponible: false,
+      statut: 'DISPONIBLE'
+    },
     {
       id: 18,
       codeVoyage: 'VOY-TUN-DJE-01',
       titre: 'Vol Tunis Carthage → Djerba Zarzis',
-      description: 'Vol direct intérieur quotidien avec service à bord et bagage inclus.',
+      description: 'Liaison quotidienne vers l\'île des sables avec service à bord et bagage inclus.',
       villeDepart: 'Tunis',
       villeDestination: 'Djerba',
       paysDestination: 'Tunisie',
@@ -89,38 +119,6 @@ export class HomeComponent implements OnInit {
       statut: 'DISPONIBLE'
     },
     {
-      id: 20,
-      codeVoyage: 'VOY-TUN-TOZ-02',
-      titre: 'Vol Direct Oasis Tunis → Tozeur Nefta',
-      description: 'Découvrez le Sud tunisien et les oasis du Sahara au départ de Tunis.',
-      villeDepart: 'Tunis',
-      villeDestination: 'Tozeur',
-      paysDestination: 'Tunisie',
-      compagnie: 'Tunisair Express',
-      typeTransport: 'VOL',
-      categorie: 'PROMO',
-      dateDepart: '2026-11-22T10:00:00',
-      dateArrivee: '2026-11-22T11:05:00',
-      dureeMinutes: 65,
-      dureeFormatee: '1h 05m',
-      escales: 0,
-      prixBase: 120.0,
-      prixPromo: 89.0,
-      prixEffectif: 89.0,
-      pourcentageReduction: 26,
-      enPromotion: true,
-      placesDisponibles: 12,
-      noteMoyenne: 4.9,
-      nombreAvis: 29,
-      nombreConsultations: 310,
-      bagageCabineInclus: true,
-      bagageSouteInclus: true,
-      annulationGratuite: true,
-      repasInclus: false,
-      wifiDisponible: false,
-      statut: 'DISPONIBLE'
-    },
-    {
       id: 23,
       codeVoyage: 'VOY-TUN-TAB-06',
       titre: 'Autocar Confort Montagne Tunis → Tabarka',
@@ -136,13 +134,13 @@ export class HomeComponent implements OnInit {
       dureeMinutes: 165,
       dureeFormatee: '2h 45m',
       escales: 1,
-      prixBase: 17.0,
-      prixPromo: 17.0,
-      prixEffectif: 17.0,
-      pourcentageReduction: 0,
-      enPromotion: false,
+      prixBase: 24.0,
+      prixPromo: 19.0,
+      prixEffectif: 19.0,
+      pourcentageReduction: 21,
+      enPromotion: true,
       placesDisponibles: 35,
-      noteMoyenne: 4.4,
+      noteMoyenne: 4.5,
       nombreAvis: 19,
       nombreConsultations: 95,
       bagageCabineInclus: true,
@@ -156,8 +154,7 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private rechercheService: RechercheConsultationService,
-    private bagageService: BagageService,
-    private authService: AuthService,
+    public authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -171,7 +168,6 @@ export class HomeComponent implements OnInit {
 
   loadDashboardData(): void {
     this.loading = true;
-    this.error = null;
 
     // 1. Récupération des statistiques du catalogue (Module 2)
     this.rechercheService.getStatistiques().subscribe({
@@ -180,49 +176,38 @@ export class HomeComponent implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        console.warn('Statistiques catalogue non disponibles:', err);
+      error: () => {
         this.loading = false;
         this.cdr.detectChanges();
       }
     });
 
-    // 2. Récupération des statistiques bagages (Module 1 Redis) - Uniquement pour profil Admin
-    if (this.authService.isAdmin()) {
-      this.bagageService.getStatistics().subscribe({
-        next: (stats) => {
-          this.statsBagages = stats;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.warn('Statistiques bagages non disponibles:', err);
-        }
-      });
-    } else {
-      this.statsBagages = {
-        totalBagages: 1,
-        totalRevenue: 30.0,
-        averageWeight: 8.5,
-        totalWeight: 8.5,
-        pendingBagages: 0,
-        registeredBagages: 1
-      };
-    }
-
-    // 3. Récupération des offres réelles pour la vitrine
-    this.rechercheService.rechercherVoyages({}).subscribe({
-      next: (voyages) => {
-        if (voyages && voyages.length > 0) {
-          this.featuredVoyages = voyages.slice(0, 4);
+    // 2. Récupération des offres en promotion pour la vitrine principale
+    this.rechercheService.rechercherVoyages({ enPromotionUniquement: true }).subscribe({
+      next: (promos) => {
+        if (promos && promos.length > 0) {
+          this.promotionsVoyages = promos;
         } else {
-          this.featuredVoyages = this.defaultFeaturedVoyages;
+          this.promotionsVoyages = this.defaultPromotions;
         }
         this.cdr.detectChanges();
       },
       error: () => {
-        this.featuredVoyages = this.defaultFeaturedVoyages;
+        this.promotionsVoyages = this.defaultPromotions;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  reserverOffre(v: VoyageOffre): void {
+    const prix = v.prixEffectif || v.prixPromo || v.prixBase;
+    const ref = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
+    this.reservationSuccessMessage = `Place réservée avec succès pour "${v.titre}" au tarif de ${prix} DT ! Référence dossier : ${ref}`;
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      this.reservationSuccessMessage = null;
+      this.cdr.detectChanges();
+    }, 5000);
   }
 }

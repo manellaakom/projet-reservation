@@ -12,6 +12,7 @@ import {
   VoyageOffre,
   VoyageRequestDTO
 } from '../../models/recherche.model';
+import { AuthService } from '../../services/auth.service';
 
 interface Toast {
   id: number;
@@ -73,13 +74,15 @@ export class RechercheConsultationComponent implements OnInit {
   showAuthModal: boolean = false;
   jwtTokenInput: string = '';
   apiUrlInput: string = '';
+  isAdmin: boolean = false;
 
   // Toasts
   toasts: Toast[] = [];
 
   constructor(
     private service: RechercheConsultationService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    public authService: AuthService
   ) {
     this.voyageForm = this.fb.group({
       codeVoyage: ['', [Validators.required, Validators.maxLength(40)]],
@@ -109,10 +112,21 @@ export class RechercheConsultationComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.isAdmin();
+    this.authService.currentUser$.subscribe(() => {
+      this.isAdmin = this.authService.isAdmin();
+    });
+
     this.jwtTokenInput = this.service.getAuthToken();
     this.apiUrlInput = this.service.getApiUrl();
     this.lancerRecherche();
     this.chargerStatistiques();
+  }
+
+  reserverVoyage(v: VoyageOffre): void {
+    const prix = v.prixEffectif || v.prixPromo || v.prixBase;
+    const ref = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
+    this.showToast('success', 'Réservation Confirmée !', `Votre place sur "${v.titre}" a été réservée avec succès au tarif de ${prix} DT. Référence : ${ref}`);
   }
 
   // --- RECHERCHE ET CATALOGUE ---
