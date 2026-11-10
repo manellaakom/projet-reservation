@@ -18,15 +18,23 @@ class EurekaRegisterCommand extends Command
     {
         $output->writeln('Connexion au serveur Eureka...');
 
+        $eurekaUrl = $_ENV['EUREKA_SERVER_URL'] ?? 'http://host.docker.internal:8761/eureka';
+        if (str_contains($eurekaUrl, 'localhost')) {
+            $eurekaUrl = str_replace('localhost', 'host.docker.internal', $eurekaUrl);
+        }
+        $appName   = $_ENV['EUREKA_APP_NAME'] ?? 'SUPPORT-CLIENT-BACKEND';
+        $hostName  = $_ENV['EUREKA_HOST'] ?? 'localhost';
+        $port      = (int)($_ENV['EUREKA_PORT'] ?? 8000);
+
         $client = new EurekaClient([
-            'eurekaDefaultUrl' => 'http://localhost:8761/eureka',
-            'hostName'         => 'localhost',
-            'appName'          => 'SUPPORT-CLIENT-BACKEND',
+            'eurekaDefaultUrl' => $eurekaUrl,
+            'hostName'         => $hostName,
+            'appName'          => $appName,
             'ip'               => '127.0.0.1',
-            'port'             => ['8000', true],
-            'homePageUrl'      => 'http://localhost:8000',
-            'statusPageUrl'    => 'http://localhost:8000/api',
-            'healthCheckUrl'   => 'http://localhost:8000/api',
+            'port'             => [$port, true],
+            'homePageUrl'      => "http://localhost:{$port}",
+            'statusPageUrl'    => "http://localhost:{$port}/api/support-requests",
+            'healthCheckUrl'   => "http://localhost:{$port}/api/support-requests",
         ]);
 
         try {
