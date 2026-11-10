@@ -10,11 +10,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/support/request')]
-final class SupportRequestController extends AbstractController
+#[Route('/support')]
+#[IsGranted('ROLE_ADMIN')]
+class SupportRequestController extends AbstractController
 {
-    #[Route(name: 'app_support_request_index', methods: ['GET'])]
+    #[Route('/', name: 'app_support_request_index', methods: ['GET'])]
     public function index(SupportRequestRepository $supportRequestRepository): Response
     {
         return $this->render('support_request/index.html.twig', [
@@ -71,7 +73,7 @@ final class SupportRequestController extends AbstractController
     #[Route('/{id}', name: 'app_support_request_delete', methods: ['POST'])]
     public function delete(Request $request, SupportRequest $supportRequest, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$supportRequest->getId(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete'.$supportRequest->getId(), $request->request->get('_token'))) {
             $entityManager->remove($supportRequest);
             $entityManager->flush();
         }

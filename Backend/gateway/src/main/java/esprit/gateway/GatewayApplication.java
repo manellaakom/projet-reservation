@@ -44,7 +44,9 @@ public class GatewayApplication {
                         .uri("http://localhost:8084"))
                 .route("reservations", route -> route.path("/api/v1/**")
                         .uri("http://localhost:8003"))
-                .route("support", route -> route.path("/support/**")
+                .route("support", route -> route.path("/support/**", "/api/support-requests/**")
+                        .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
+                                       .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
                         .uri("http://localhost:8000"))
                 .build();
     }

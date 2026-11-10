@@ -1,78 +1,22 @@
-\# Module Support Client — API REST Symfony
+# Module 5 - Support Client (Microservice PHP/Symfony)
 
+Ce module gère les demandes de support client et les réclamations pour l'application de réservation **SkyVoyage**. Il fait partie d'une architecture microservices où les autres modules sont développés en Java (Spring Boot).
 
+## 🚀 Technologies utilisées
+*   **Backend** : PHP 8.4 / Symfony 7
+*   **Base de données** : PostgreSQL 16
+*   **Sécurité** : JWT (LexikJWTAuthenticationBundle)
+*   **API** : API Platform (Swagger)
+*   **Conteneurisation** : Docker & Docker Compose
 
-Backend API REST du \*\*module Support Client\*\* d'une plateforme de réservation de voyages et de billets. Ce module fait partie d'une architecture microservices et gère la communication entre les voyageurs et le service client.
+## 🛠️ Comment lancer le projet
 
+Vous avez deux options pour lancer ce module : avec Docker (recommandé) ou en local.
 
+### Option 1 : Avec Docker (Recommandé)
+Cette méthode lance l'application, la base de données et le service de mail dans des conteneurs isolés.
 
-\---
-
-
-
-\## 📋 Table des matières
-
-
-
-\- \[Description](#-description)
-
-\- \[Architecture](#-architecture)
-
-\- \[Technologies](#-technologies)
-
-\- \[Installation](#-installation)
-
-\- \[Configuration](#-configuration)
-
-\- \[Lancement](#-lancement)
-
-\- \[API REST](#-api-rest)
-
-\- \[Notifications Email](#-notifications-email)
-
-\- \[Upload de fichiers](#-upload-de-fichiers)
-
-\- \[Tests](#-tests)
-
-\- \[Structure du projet](#-structure-du-projet)
-
-
-
-\---
-
-
-
-\## 🎯 Description
-
-
-
-Ce module permet aux \*\*clients\*\* de créer des demandes de support et aux \*\*agents\*\* d'y répondre. Il gère :
-
-
-
-\- La \*\*création\*\* de demandes de support
-
-\- La \*\*catégorisation\*\* des demandes
-
-\- Le \*\*suivi du statut\*\* (En cours / Résolu / Clôturé)
-
-\- L'\*\*ajout de pièces jointes\*\* (max 10 Mo)
-
-\- Les \*\*réponses\*\* aux demandes
-
-\- Les \*\*notifications email\*\* automatiques aux changements de statut
-
-
-
-\---
-
-
-
-\## 🏗️ Architecture
-
-
-
-Ce module fait partie de l'architecture microservices globale :
-
-
-
+1.  Assurez-vous que **Docker Desktop** est installé et lancé.
+2.  À la racine du projet, lancez la commande suivante pour construire et démarrer les conteneurs :
+    ```bash
+    docker compose up -d --build
