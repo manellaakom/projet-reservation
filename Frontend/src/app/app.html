@@ -1,4 +1,10 @@
-<div class="layout-wrapper">
+<!-- 1. VUE EXTÉRIEURE : Page de Connexion Plein Écran (sans barre ni menu intérieur) -->
+<div *ngIf="isLoginPage" class="external-layout">
+  <router-outlet></router-outlet>
+</div>
+
+<!-- 2. VUE INTÉRIEURE : Application Complète (Accessible uniquement après connexion) -->
+<div *ngIf="!isLoginPage" class="layout-wrapper">
   <!-- Topbar Sakai -->
   <header class="layout-topbar">
     <a routerLink="/" class="topbar-brand">
@@ -16,35 +22,30 @@
         <span>Gateway : 8080</span>
       </div>
 
-      <!-- Badge Utilisateur Global -->
+      <!-- Badge Utilisateur Global Connecté -->
       <div *ngIf="currentUser" class="topbar-user-badge" [class.admin-user]="currentUser.isAdmin">
         <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill' : 'pi-user'"></i>
         <span class="username">{{ currentUser.username }}</span>
         <span class="role-tag">{{ currentUser.isAdmin ? 'Admin' : 'Voyageur' }}</span>
-        <button class="btn-logout" (click)="logout()" title="Se déconnecter">
+        <button class="btn-logout" (click)="logout()" title="Se déconnecter et quitter l'application">
           <i class="pi pi-sign-out"></i>
+          <span>Quitter</span>
         </button>
       </div>
-
-      <!-- Bouton Connexion si non connecté -->
-      <a *ngIf="!currentUser" routerLink="/login" class="topbar-login-btn">
-        <i class="pi pi-user"></i>
-        <span>Connexion (Keycloak)</span>
-      </a>
     </div>
   </header>
 
-  <!-- Container avec Sidebar et Main Content -->
+  <!-- Container avec Sidebar et Contenu Principal -->
   <div class="layout-container">
     <!-- Sidebar Sakai -->
     <aside class="layout-sidebar">
       <div>
-        <div class="sidebar-section-title">Menu Principal</div>
+        <div class="sidebar-section-title">Navigation Intérieure</div>
         <ul class="sidebar-menu">
           <li>
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="menu-item">
               <i class="pi pi-home"></i>
-              <span>Accueil</span>
+              <span>Tableau de Bord</span>
             </a>
           </li>
           <li>
@@ -59,22 +60,21 @@
               <span>Gestion des Bagages</span>
             </a>
           </li>
-          <li>
-            <a routerLink="/login" routerLinkActive="active" class="menu-item">
-              <i class="pi pi-shield"></i>
-              <span>Espace Connexion</span>
-            </a>
-          </li>
         </ul>
       </div>
 
+      <!-- Carte d'information & Déconnexion au bas du menu -->
       <div class="sidebar-info-card">
         <h4>SkyVoyage Airlines</h4>
-        <p>Plateforme centralisée pour la recherche de voyages et l'enregistrement des bagages.</p>
+        <p>Session active en tant que <strong>{{ currentUser?.username || 'Utilisateur' }}</strong>.</p>
+        <button class="btn-sidebar-logout" (click)="logout()">
+          <i class="pi pi-sign-out"></i>
+          <span>Déconnexion</span>
+        </button>
       </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Contenu Principal -->
     <main class="layout-main">
       <router-outlet></router-outlet>
     </main>

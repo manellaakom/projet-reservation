@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService, UserProfile } from '../../services/auth.service';
 
 @Component({
@@ -20,14 +20,18 @@ export class LoginComponent implements OnInit {
   successMessage: string | null = null;
 
   currentUser: UserProfile | null = null;
+  returnUrl: string = '/';
 
   constructor(
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       this.cdr.detectChanges();
@@ -59,11 +63,11 @@ export class LoginComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         const role = this.authService.isAdmin() ? 'Administrateur' : 'Voyageur';
-        this.successMessage = `Connexion réussie ! Bienvenue, ${this.username} (${role}).`;
+        this.successMessage = `Connexion réussie ! Bienvenue, ${this.username} (${role}). Redirection vers l'application...`;
         this.cdr.detectChanges();
         setTimeout(() => {
-          this.router.navigate(['/voyages']);
-        }, 800);
+          this.router.navigateByUrl(this.returnUrl);
+        }, 500);
       },
       error: (err) => {
         this.loading = false;
