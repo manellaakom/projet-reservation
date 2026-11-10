@@ -7,18 +7,13 @@
       </div>
       <div>
         <span class="brand-name">SkyVoyage</span>
-        <span class="brand-badge">Plateforme Centrale</span>
       </div>
     </a>
 
     <div class="topbar-actions">
-      <div class="backend-pill" title="Microservice Module 2 (Recherche & Consultation)">
+      <div class="backend-pill">
         <span class="dot"></span>
-        <span>Module 2 : 8082 / 9082</span>
-      </div>
-      <div class="backend-pill" title="Toutes les requêtes peuvent transiter par l'API Gateway">
-        <span class="dot"></span>
-        <span>Gateway : 8080</span>
+        <span>Système connecté</span>
       </div>
     </div>
   </header>
@@ -28,7 +23,7 @@
     <!-- Sidebar Sakai -->
     <aside class="layout-sidebar">
       <div>
-        <div class="sidebar-section-title">Navigation Principale</div>
+        <div class="sidebar-section-title">Menu Principal</div>
         <ul class="sidebar-menu">
           <li>
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="menu-item">
@@ -39,52 +34,39 @@
           <li>
             <a routerLink="/voyages" routerLinkActive="active" class="menu-item">
               <i class="pi pi-compass"></i>
-              <span>Recherche & Voyages</span>
+              <span>Rechercher un Voyage</span>
             </a>
           </li>
           <li>
             <a routerLink="/bagages" routerLinkActive="active" class="menu-item">
               <i class="pi pi-briefcase"></i>
-              <span>Gestion des bagages</span>
+              <span>Gestion des Bagages</span>
             </a>
           </li>
         </ul>
       </div>
 
       <div>
-        <div class="sidebar-section-title">Liens Microservices</div>
+        <div class="sidebar-section-title">Services & Outils</div>
         <ul class="sidebar-menu">
           <li>
             <a href="http://localhost:8082/swagger-ui.html" target="_blank" rel="noopener noreferrer" class="menu-item">
               <i class="pi pi-file-code"></i>
-              <span>Swagger Module 2 (8082)</span>
-            </a>
-          </li>
-          <li>
-            <a href="http://localhost:9082/swagger-ui.html" target="_blank" rel="noopener noreferrer" class="menu-item">
-              <i class="pi pi-box"></i>
-              <span>Docker Module 2 (9082)</span>
-            </a>
-          </li>
-          <li>
-            <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer" class="menu-item">
-              <i class="pi pi-file-code"></i>
-              <span>Swagger Gateway (8080)</span>
+              <span>Documentation API</span>
             </a>
           </li>
           <li>
             <a href="http://localhost:8761" target="_blank" rel="noopener noreferrer" class="menu-item">
               <i class="pi pi-server"></i>
-              <span>Tableau Eureka (8761)</span>
+              <span>Registre Eureka</span>
             </a>
           </li>
         </ul>
       </div>
 
       <div class="sidebar-info-card">
-        <h4>SkyVoyage Hub</h4>
-        <p><strong>Module 2 :</strong> Recherche & Consultation (MySQL • RabbitMQ • Feign • JWT)</p>
-        <p style="margin-top: 0.5rem; opacity: 0.85;"><strong>Module 1 :</strong> Bagages (Redis • Eureka • Gateway)</p>
+        <h4>SkyVoyage Airlines</h4>
+        <p>Plateforme centralisée pour la recherche de voyages et l'enregistrement des bagages.</p>
       </div>
     </aside>
 

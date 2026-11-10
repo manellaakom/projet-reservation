@@ -20,12 +20,12 @@
 <div class="view-header">
   <div>
     <h1 class="view-title">Catalogue & Recherche de Voyages</h1>
-    <p class="view-subtitle">Recherche multi-critères, moteur de comparaison, suggestions intelligentes et sécurité JWT (Module 2)</p>
+    <p class="view-subtitle">Recherche multi-critères, moteur de comparaison et suggestions personnalisées pour vos séjours.</p>
   </div>
   <div class="view-actions">
-    <button class="btn btn-outline" (click)="ouvrirAuthModal()" title="Paramétrer votre Token JWT et basculer entre :8082, Docker :9082 ou Gateway">
-      <i class="pi pi-shield"></i>
-      <span>Sécurité JWT</span>
+    <button class="btn btn-outline" (click)="ouvrirAuthModal()" title="Connexion Administrateur">
+      <i class="pi pi-user"></i>
+      <span>Administration</span>
     </button>
     <button class="btn btn-secondary" (click)="ouvrirComparateur()" [disabled]="selectedIdsForCompare.length < 2" title="Comparer côte-à-côte les offres sélectionnées">
       <i class="pi pi-sliders-h"></i>
@@ -610,31 +610,21 @@
 <div class="modal-overlay" *ngIf="showAuthModal">
   <div class="modal-card">
     <div class="modal-header">
-      <h2><i class="pi pi-shield text-primary"></i> Sécurité JWT & Connexion Backend</h2>
+      <h2><i class="pi pi-user text-primary"></i> Espace Authentification & Rôles</h2>
       <button class="btn-close" (click)="showAuthModal = false"><i class="pi pi-times"></i></button>
     </div>
 
     <div class="modal-body">
       <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
-        Renseignez un token JWT pour tester la création, modification et suppression des voyages selon votre rôle.
+        Renseignez un jeton d'accès pour déverrouiller les fonctionnalités d'administration (création, modification et suppression des offres).
       </p>
 
       <div class="form-group">
-        <label class="form-label">URL Backend Microservice Module 2</label>
-        <input type="text" [(ngModel)]="apiUrlInput" class="form-control font-mono" />
-        <div class="btn-group-chips" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersNatif()">Natif :8082</button>
-          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersDocker()">Docker :9082</button>
-          <button type="button" class="btn btn-xs btn-outline" (click)="basculerVersGateway()">Gateway :8080</button>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-top: 1rem;">
         <label class="form-label">Jeton d'authentification (Token JWT)</label>
         <textarea [(ngModel)]="jwtTokenInput" rows="3" class="form-control font-mono" placeholder="Collez votre jeton JWT ici..."></textarea>
         <div class="btn-group-chips" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-          <button type="button" class="btn btn-xs btn-primary" (click)="remplirTokenAdminDemo()">Remplir Token ROLE_ADMIN</button>
-          <button type="button" class="btn btn-xs btn-secondary" (click)="remplirTokenClientDemo()">Remplir Token ROLE_USER</button>
+          <button type="button" class="btn btn-xs btn-primary" (click)="remplirTokenAdminDemo()">Activer Profil Administrateur</button>
+          <button type="button" class="btn btn-xs btn-secondary" (click)="remplirTokenClientDemo()">Activer Profil Voyageur</button>
         </div>
       </div>
     </div>

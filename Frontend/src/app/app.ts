@@ -10,5 +10,5 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./app.scss']
 })
 export class App {
-  title = 'SkyVoyage — Gestion des Bagages';
+  title = 'SkyVoyage — Plateforme de Voyages & Bagages';
 }
