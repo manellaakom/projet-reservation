@@ -20,8 +20,11 @@ class AttachmentUploadController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private SluggerInterface $slugger,
-        private string $uploadDir,
+        private string $uploadDir = '',
     ) {
+        if (empty($this->uploadDir)) {
+            $this->uploadDir = __DIR__ . '/../../public/uploads/attachments';
+        }
     }
 
     #[Route('/upload', name: 'api_attachment_upload', methods: ['POST'])]
