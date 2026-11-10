@@ -1,0 +1,26 @@
+# On part d'une image PHP officielle avec Apache
+FROM php:8.3-apache
+
+# On installe les extensions nécessaires (PostgreSQL, etc.)
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql
+
+# On active le module de réécriture d'URL d'Apache (nécessaire pour Symfony)
+RUN a2enmod rewrite
+
+# On définit le dossier de travail
+WORKDIR /var/www/html
+
+# On copie tout le code de votre projet dans le conteneur
+COPY . .
+
+# On donne les permissions au serveur web
+RUN chown -R www-data:www-data /var/www/html/var /var/www/html/public
+
+# On installe Composer pour les dépendances
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --no-interaction --optimize-autoloader
+
+# On expose le port 80 du conteneur
+EXPOSE 80

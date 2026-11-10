@@ -1,0 +1,28 @@
+services:
+  # Le conteneur de votre application PHP
+  app:
+    build: .
+    ports:
+      - "8000:80" # Redirige le port 80 du conteneur vers le port 8000 de votre PC
+    environment:
+      # On passe la configuration de la base de données via des variables
+      DATABASE_URL: "postgresql://postgres:postgres123@database:5432/projet_reservation?serverVersion=16&charset=utf8"
+    depends_on:
+      - database
+    volumes:
+      - .:/var/www/html # Permet de modifier le code en direct sans rebuild
+
+  # Le conteneur de la base de données PostgreSQL
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: projet_reservation
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432" # Permet de se connecter à la base depuis votre PC (pgAdmin, etc.)
+    volumes:
+      - database_data:/var/lib/postgresql/data
+
+volumes:
+  database_data:

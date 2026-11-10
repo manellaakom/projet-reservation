@@ -1,0 +1,26 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        users_in_memory:
+            memory:
+                users:
+                    admin: { password: '$2y$13$e0CjC1Z2N3l4M5o6P7q8R9s0T1u2V3w4X5y6Z7a8B9c0D1e2F3g4H5i6J7k8L9m0', roles: ['ROLE_ADMIN'] }
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+        
+        api:
+            pattern: ^/(api|support)/
+            stateless: true
+            jwt: ~ 
+            provider: users_in_memory
+
+    access_control:
+        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/docs\.json, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: PUBLIC_ACCESS }
+        - { path: ^/support, roles: PUBLIC_ACCESS }
