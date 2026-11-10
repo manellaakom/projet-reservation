@@ -42,6 +42,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 1. Endpoints publics : Documentation OpenAPI, Swagger UI et Actuator (monitoring)
                 .requestMatchers(
+                    "/",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
