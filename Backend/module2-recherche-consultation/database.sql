@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Base de données MySQL (XAMPP / phpMyAdmin)
--- Module 2 : Recherche & Consultation de Voyages et Billets
+-- Module 2 : Recherche & Consultation de Voyages et Billets (Données Tunisiennes)
 -- ============================================================================
 
 CREATE DATABASE IF NOT EXISTS `recherche_consultation_db`
@@ -86,7 +86,7 @@ CREATE TABLE `historiques_recherches` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- Données initiales : 8 offres de voyages
+-- Données initiales : 12 offres de voyages 100% tunisiennes
 -- ----------------------------------------------------------------------------
 INSERT INTO `voyages` (
   `id`, `code_voyage`, `titre`, `description`, `ville_depart`, `ville_destination`, `pays_destination`,
@@ -94,82 +94,105 @@ INSERT INTO `voyages` (
   `prix_base`, `prix_promo`, `en_promotion`, `places_disponibles`, `note_moyenne`, `nombre_avis`, `nombre_consultations`,
   `bagage_cabine_inclus`, `bagage_soute_inclus`, `annulation_gratuite`, `repas_inclus`, `wifi_disponible`, `image_url`, `statut`
 ) VALUES
-(1, 'VOY-TUN-PAR-101', 'Vol Direct Tunis → Paris Charles de Gaulle',
- 'Vol régulier direct opéré par Tunisair en Airbus A320neo. Repas chaud méditerranéen, bagage cabine 8 kg et bagage en soute 23 kg inclus dès le tarif standard.',
- 'Tunis', 'Paris', 'France', 'Tunisair', 'VOL', 'CONFORT', '2026-11-15 08:30:00', '2026-11-15 11:05:00', 155, 0,
- 620.00, 465.00, 1, 28, 4.6, 184, 245, 1, 1, 1, 1, 0,
- 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+(1, 'VOY-TUN-DJE-01', 'Vol Direct Tunis-Carthage → Djerba-Zarzis',
+ 'Liaison quotidienne rapide opérée par Tunisair Express en ATR 72-600. Idéal pour vos séjours à Djerba la douce, bagage cabine et soute inclus.',
+ 'Tunis', 'Djerba', 'Tunisie', 'Tunisair Express', 'VOL', 'CONFORT', '2026-11-20 07:30:00', '2026-11-20 08:25:00', 55, 0,
+ 180.00, 140.00, 1, 32, 4.8, 145, 420, 1, 1, 1, 0, 0,
+ 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(2, 'VOY-TUN-PAR-102', 'Vol Express Tunis → Paris Orly (Tarif Light)',
- 'Solution économique idéale pour un court séjour à Paris. Arrivée à l''aéroport de Paris-Orly à 25 minutes du centre-ville via le métro ligne 14.',
- 'Tunis', 'Paris', 'France', 'Transavia France', 'VOL', 'ECONOMIQUE', '2026-11-15 14:15:00', '2026-11-15 16:45:00', 150, 0,
- 340.00, 295.00, 1, 14, 4.4, 142, 310, 1, 0, 0, 0, 0,
- 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+(2, 'VOY-TUN-TOZ-02', 'Vol Saharien Tunis-Carthage → Tozeur-Nefta',
+ 'Envolez-vous vers les portes du désert tunisien et ses célèbres oasis du Djérid. Embarquement immédiat au terminal 2 de Tunis-Carthage.',
+ 'Tunis', 'Tozeur', 'Tunisie', 'Tunisair Express', 'VOL', 'CONFORT', '2026-11-22 14:00:00', '2026-11-22 15:05:00', 65, 0,
+ 220.00, 175.00, 1, 24, 4.7, 98, 310, 1, 1, 1, 1, 0,
+ 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(3, 'VOY-TUN-IST-201', 'Vol Confort Tunis → Istanbul Airport',
- 'Découvrez Istanbul avec Turkish Airlines, élue meilleure compagnie d''Europe. Écrans individuels, Wi-Fi à bord, gastronomie turque et franchise bagage généreuse de 30 kg.',
- 'Tunis', 'Istanbul', 'Turquie', 'Turkish Airlines', 'VOL', 'PREMIUM', '2026-11-18 10:00:00', '2026-11-18 14:50:00', 170, 0,
- 780.00, 640.00, 1, 22, 4.9, 265, 390, 1, 1, 1, 1, 1,
- 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+(3, 'VOY-TUN-SOUS-03', 'Train Express Climatisé Tunis Ville → Sousse Voyageurs',
+ 'Liaison ferroviaire rapide depuis la gare centrale de Tunis Place Barcelone jusqu au centre de Sousse. Sièges inclinables 1ère classe et grand confort.',
+ 'Tunis', 'Sousse', 'Tunisie', 'SNCFT', 'TRAIN', 'CONFORT', '2026-11-21 09:15:00', '2026-11-21 11:15:00', 120, 0,
+ 28.00, 22.00, 1, 58, 4.5, 320, 510, 1, 1, 1, 0, 0,
+ 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(4, 'VOY-TUN-ROM-301', 'Escapade Italienne Tunis → Rome Fiumicino',
- 'Liaison rapide d''à peine 1h20 vers la capitale italienne. Idéal pour un week-end culturel ou des correspondances européennes.',
- 'Tunis', 'Rome', 'Italie', 'ITA Airways', 'VOL', 'CONFORT', '2026-11-20 09:15:00', '2026-11-20 10:35:00', 80, 0,
- 410.00, 350.00, 1, 19, 4.7, 118, 195, 1, 1, 1, 1, 1,
- 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+(4, 'VOY-TUN-SFAX-04', 'Autorail Express Tunis Ville → Sfax Gare',
+ 'Train grande ligne moderne reliant la capitale à Sfax. Climatisation intégrale, prises électriques individuelles et espace bagages volumineux.',
+ 'Tunis', 'Sfax', 'Tunisie', 'SNCFT', 'TRAIN', 'CONFORT', '2026-11-23 06:45:00', '2026-11-23 10:00:00', 195, 0,
+ 36.00, 29.00, 1, 45, 4.4, 260, 380, 1, 1, 1, 0, 0,
+ 'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(5, 'VOY-TUN-DXB-401', 'Expérience Prestige Tunis → Dubaï International',
- 'Voyagez à bord du Boeing 777 d''Emirates en liaison directe vers Dubaï. Divertissement ICE primé, Wi-Fi haut débit, repas gastronomique et 2 bagages en soute.',
- 'Tunis', 'Dubaï', 'Émirats Arabes Unis', 'Emirates', 'VOL', 'LUXE', '2026-12-01 15:00:00', '2026-12-01 23:45:00', 345, 0,
- 1650.00, 1390.00, 1, 7, 4.95, 312, 420, 1, 1, 1, 1, 1,
- 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=80', 'DERNIERES_PLACES'),
+(5, 'VOY-SFX-GAB-05', 'Autocar Grand Tourisme Climatisé Sfax → Gabès',
+ 'Liaison routière directe assurée par la SNTRI. Véhicules neufs grand confort avec climatisation, suspension pneumatique et soute spacieuse.',
+ 'Sfax', 'Gabès', 'Tunisie', 'SNTRI', 'BUS', 'ECONOMIQUE', '2026-11-24 08:30:00', '2026-11-24 10:40:00', 130, 0,
+ 24.00, 18.00, 1, 40, 4.3, 110, 195, 1, 1, 0, 0, 0,
+ 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(6, 'VOY-TUN-MRS-501', 'Traversée Ferry Tunis La Goulette → Marseille',
- 'Voyagez en mer Méditerranée avec cabine privée vue mer et possibilité d''embarquer avec un bagage volumineux jusqu''à 50 kg.',
- 'Tunis', 'Marseille', 'France', 'CTN Navigation', 'BATEAU', 'CONFORT', '2026-11-22 12:00:00', '2026-11-23 09:00:00', 1260, 0,
- 540.00, NULL, 0, 45, 4.3, 89, 130, 1, 1, 1, 1, 1,
+(6, 'VOY-TUN-TAB-06', 'Autocar Confort Montagne Tunis → Tabarka / Aïn Draham',
+ 'Départ de la gare Bab Alioua pour traverser les magnifiques forêts de chênes-lièges de la Kroumirie jusqu à la côte de Corail de Tabarka.',
+ 'Tunis', 'Tabarka', 'Tunisie', 'SNTRI', 'BUS', 'ECONOMIQUE', '2026-11-25 07:00:00', '2026-11-25 09:50:00', 170, 0,
+ 22.00, 17.00, 1, 35, 4.6, 85, 240, 1, 1, 1, 0, 0,
+ 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+
+(7, 'VOY-TUN-MRS-07', 'Traversée Maritime Ferry Tunis La Goulette → Marseille',
+ 'Embarquez à bord du navire amiral Tanit de la CTN. Cabines privées climatisées avec salle d eau, restaurants gastronomiques et jusqu à 50 kg de bagages autorisés.',
+ 'Tunis', 'Marseille', 'France', 'Compagnie Tunisienne de Navigation', 'BATEAU', 'CONFORT', '2026-11-26 12:00:00', '2026-11-27 09:00:00', 1260, 0,
+ 540.00, 450.00, 1, 60, 4.6, 215, 430, 1, 1, 1, 1, 1,
  'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(7, 'VOY-DJE-BCN-601', 'Vol + Séjour Méditerranéen Djerba → Barcelone',
- 'Formule combinée vol + transfert vers le cœur de Barcelone. Idéal pour découvrir la Sagrada Família et la côte catalane.',
- 'Djerba', 'Barcelone', 'Espagne', 'Nouvelair', 'SEJOUR_PACK', 'PROMO', '2026-11-25 11:00:00', '2026-11-25 13:10:00', 130, 0,
- 690.00, 499.00, 1, 12, 4.75, 96, 215, 1, 1, 1, 1, 1,
- 'https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+(8, 'VOY-TUN-GEN-08', 'Traversée Maritime Ferry Tunis La Goulette → Gênes',
+ 'Liaison maritime directe opérée par le ferry Carthage de la CTN reliant la Tunisie au port historique de Gênes en Italie.',
+ 'Tunis', 'Gênes', 'Italie', 'Compagnie Tunisienne de Navigation', 'BATEAU', 'CONFORT', '2026-11-28 14:00:00', '2026-11-29 13:00:00', 1380, 0,
+ 580.00, 490.00, 1, 50, 4.5, 178, 310, 1, 1, 1, 1, 1,
+ 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
 
-(8, 'VOY-PAR-LON-701', 'TGV Eurostar Direct Paris Gare du Nord → Londres St Pancras',
- 'Reliez le cœur de Paris au centre de Londres en 2h15 sous la Manche. Enregistrement rapide, Wi-Fi gratuit et 2 bagages inclus sans restriction de liquides.',
- 'Paris', 'Londres', 'Royaume-Uni', 'Eurostar', 'TRAIN', 'PREMIUM', '2026-11-16 13:13:00', '2026-11-16 15:30:00', 137, 0,
- 310.00, 245.00, 1, 34, 4.85, 210, 275, 1, 1, 1, 1, 1,
- 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE');
+(9, 'VOY-TUN-PAR-09', 'Vol Régulier Tunis-Carthage → Paris Charles de Gaulle',
+ 'Ligne phare de la compagnie nationale Tunisair en Airbus A320neo. Repas chaud tunisien offert, 8 kg cabine et 23 kg en soute inclus dès la classe standard.',
+ 'Tunis', 'Paris', 'France', 'Tunisair', 'VOL', 'CONFORT', '2026-11-21 08:30:00', '2026-11-21 11:05:00', 155, 0,
+ 720.00, 590.00, 1, 28, 4.7, 410, 620, 1, 1, 1, 1, 0,
+ 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+
+(10, 'VOY-DJE-PAR-10', 'Vol Direct Djerba-Zarzis → Paris Orly',
+ 'Vol direct opéré par Nouvelair en Airbus A320. Idéal pour rejoindre la région parisienne depuis le sud tunisien avec ponctualité exemplaire.',
+ 'Djerba', 'Paris', 'France', 'Nouvelair', 'VOL', 'ECONOMIQUE', '2026-11-23 11:00:00', '2026-11-23 13:55:00', 175, 0,
+ 640.00, 510.00, 1, 20, 4.8, 230, 490, 1, 1, 0, 0, 0,
+ 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+
+(11, 'VOY-MIR-LYO-11', 'Vol Direct Monastir Habib Bourguiba → Lyon Saint-Exupéry',
+ 'Liaison directe Nouvelair reliant le Sahel tunisien au bassin rhodanien. Service chaleureux et options de bagages flexibles.',
+ 'Monastir', 'Lyon', 'France', 'Nouvelair', 'VOL', 'ECONOMIQUE', '2026-11-24 15:20:00', '2026-11-24 17:35:00', 135, 0,
+ 490.00, 395.00, 1, 22, 4.6, 135, 280, 1, 0, 0, 0, 0,
+ 'https://images.unsplash.com/photo-1549877452-9c387954fbc2?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE'),
+
+(12, 'VOY-TUN-IST-12', 'Vol Tunis-Carthage → Istanbul Nouvel Aéroport',
+ 'Vol régulier opéré par Tunisair vers Istanbul. Service complet avec repas chaud à bord et franchise bagage soute généreuse de 32 kg.',
+ 'Tunis', 'Istanbul', 'Turquie', 'Tunisair', 'VOL', 'PREMIUM', '2026-11-25 10:30:00', '2026-11-25 15:15:00', 165, 0,
+ 890.00, 740.00, 1, 16, 4.8, 340, 550, 1, 1, 1, 1, 1,
+ 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=900&q=80', 'DISPONIBLE');
 
 -- ----------------------------------------------------------------------------
--- Données initiales : 13 offres de billets par classe
+-- Données initiales : 12 offres de billets par classe (en DT)
 -- ----------------------------------------------------------------------------
 INSERT INTO `offres_billets` (
   `id`, `code_offre_billet`, `classe`, `prix`, `places_restantes`, `bagage_cabine_kg`, `bagage_soute_kg`,
   `modifiable`, `remboursable`, `choix_siege_gratuit`, `acces_salon_vip`, `conditions_tarifaires`, `voyage_id`
 ) VALUES
-(101, 'BIL-PAR-101-ECO', 'ECONOMIQUE', 465.00, 20, 8, 23, 1, 0, 0, 0, 'Modification gratuite jusqu''à 48h avant le départ. Bagage 23 kg inclus.', 1),
-(102, 'BIL-PAR-101-BUS', 'BUSINESS', 890.00, 8, 12, 30, 1, 1, 1, 1, '100% remboursable, accès Salon Privilège Tunis-Carthage et bagage 30 kg (max autorisé Module 1).', 1),
-(103, 'BIL-PAR-102-ECO', 'ECONOMIQUE', 295.00, 10, 10, 0, 0, 0, 0, 0, 'Tarif Basic : bagage cabine 10 kg inclus, bagage soute en supplément.', 2),
-(104, 'BIL-PAR-102-PLUS', 'PREMIUM_ECO', 420.00, 4, 10, 20, 1, 0, 1, 0, 'Tarif Plus : bagage en soute 20 kg + choix du siège standard inclus.', 2),
-(105, 'BIL-IST-201-ECO', 'ECONOMIQUE', 640.00, 16, 8, 25, 1, 0, 1, 0, 'Franchise bagage soute 25 kg, repas chaud et système multimédia inclus.', 3),
-(106, 'BIL-IST-201-BUS', 'BUSINESS', 1290.00, 6, 12, 30, 1, 1, 1, 1, 'Accès au célèbre Lounge Turkish Airlines, sièges inclinables et bagage 30 kg.', 3),
-(107, 'BIL-ROM-301-ECO', 'ECONOMIQUE', 350.00, 15, 8, 23, 1, 0, 0, 0, 'Bagage soute 23 kg et collation italienne inclus.', 4),
-(108, 'BIL-DXB-401-ECO', 'ECONOMIQUE', 1390.00, 5, 10, 25, 1, 1, 1, 0, '25 kg en soute, modification et annulation sans frais.', 5),
-(109, 'BIL-DXB-401-FIRST', 'PREMIERE', 3450.00, 2, 15, 30, 1, 1, 1, 1, 'Suite privée Première Classe, service chauffeur privé et bagage 30 kg.', 5),
-(110, 'BIL-MRS-501-CAB', 'PREMIUM_ECO', 540.00, 45, 12, 30, 1, 1, 1, 0, 'Cabine privative 2 personnes avec hublot + bagage 30 kg inclus.', 6),
-(111, 'BIL-BCN-601-PACK', 'ECONOMIQUE', 499.00, 12, 10, 25, 1, 0, 1, 0, 'Pack Vol A/R + Navette Aéroport El Prat + Bagage 25 kg.', 7),
-(112, 'BIL-LON-701-STD', 'ECONOMIQUE', 245.00, 24, 10, 23, 1, 0, 1, 0, 'Eurostar Standard : bagage 23 kg + 1 bagage à main, échange sans frais.', 8),
-(113, 'BIL-LON-701-PREM', 'BUSINESS', 480.00, 10, 12, 30, 1, 1, 1, 1, 'Eurostar Plus / Premier : repas servi à la place, bagage 30 kg et accès salon Business.', 8);
+(101, 'BIL-DJE-01-ECO', 'ECONOMIQUE', 140.00, 24, 8, 20, 1, 0, 0, 0, 'Tarif Express : Bagage 20 kg en soute inclus. Modifiable sans frais.', 1),
+(102, 'BIL-DJE-01-PREM', 'CONFORT', 190.00, 8, 10, 23, 1, 1, 1, 0, 'Tarif Flex : Bagage 23 kg, choix de siège et remboursement garanti.', 1),
+(103, 'BIL-TOZ-02-ECO', 'ECONOMIQUE', 175.00, 18, 8, 20, 1, 0, 0, 0, 'Tarif Oasis : Bagage soute 20 kg inclus, collation offerte.', 2),
+(104, 'BIL-SOUS-03-CONF', 'CONFORT', 22.00, 40, 10, 25, 1, 1, 1, 0, '1ère classe SNCFT : Siège spacieux inclinable, espace bagages dédié.', 3),
+(105, 'BIL-SFAX-04-CONF', 'CONFORT', 29.00, 35, 10, 25, 1, 1, 1, 0, '1ère classe Autorail Express : Prise 220V et climatisation renforcée.', 4),
+(106, 'BIL-GAB-05-ECO', 'ECONOMIQUE', 18.00, 40, 8, 20, 0, 0, 0, 0, 'Autocar Grand Tourisme : Bagage en soute 20 kg inclus.', 5),
+(107, 'BIL-TAB-06-ECO', 'ECONOMIQUE', 17.00, 35, 8, 20, 1, 0, 0, 0, 'Autocar Kroumirie Confort : Traversée directe Bab Alioua Tabarka.', 6),
+(108, 'BIL-MRS-07-CAB', 'CONFORT', 450.00, 45, 15, 30, 1, 1, 1, 0, 'Ferry Tanit CTN : Cabine privative avec lit et douche + 30 kg soute.', 7),
+(109, 'BIL-GEN-08-CAB', 'CONFORT', 490.00, 40, 15, 30, 1, 1, 1, 0, 'Ferry Carthage CTN : Cabine extérieure vue mer + 30 kg soute.', 8),
+(110, 'BIL-PAR-09-ECO', 'ECONOMIQUE', 590.00, 20, 8, 23, 1, 0, 1, 0, 'Tunisair Standard : Repas tunisien offert, bagage soute 23 kg.', 9),
+(111, 'BIL-PAR-09-BUS', 'BUSINESS', 990.00, 8, 12, 30, 1, 1, 1, 1, 'Tunisair Espace Privilège : Salon VIP Carthage, 2x30 kg et repas fin.', 9),
+(112, 'BIL-IST-12-ECO', 'ECONOMIQUE', 740.00, 12, 8, 30, 1, 0, 1, 0, 'Tunisair Istanbul : Franchise exceptionnelle 30 kg en soute.', 12);
 
 -- ----------------------------------------------------------------------------
--- Données initiales : Historique de recherches (pour analytique & suggestions)
+-- Données initiales : Historique de recherches tunisiennes
 -- ----------------------------------------------------------------------------
 INSERT INTO `historiques_recherches` (
   `mot_cle`, `ville_depart`, `ville_destination`, `type_transport`, `classe_billet`, `budget_max`, `nombre_resultats`
 ) VALUES
-('Paris', 'Tunis', 'Paris', 'VOL', 'ECONOMIQUE', 500.00, 2),
-('Istanbul', 'Tunis', 'Istanbul', 'VOL', 'BUSINESS', 1500.00, 1),
-('Rome week-end', 'Tunis', 'Rome', 'VOL', 'ECONOMIQUE', 400.00, 1);
-
+('Djerba', 'Tunis', 'Djerba', 'VOL', 'CONFORT', 250.00, 1),
+('Sousse', 'Tunis', 'Sousse', 'TRAIN', 'CONFORT', 50.00, 1),
+('Paris', 'Tunis', 'Paris', 'VOL', 'ECONOMIQUE', 750.00, 1),
+('Marseille', 'Tunis', 'Marseille', 'BATEAU', 'CONFORT', 600.00, 1);

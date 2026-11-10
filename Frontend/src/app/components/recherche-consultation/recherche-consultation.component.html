@@ -80,8 +80,8 @@
     </div>
     <div class="stat-details">
       <span class="stat-label">Prix Minimum</span>
-      <span class="stat-value">{{ statistiques.prixMinimumCatalogue | number:'1.2-2' }} €</span>
-      <span class="stat-sub">Max : {{ statistiques.prixMaximumCatalogue | number:'1.2-2' }} €</span>
+      <span class="stat-value">{{ statistiques.prixMinimumCatalogue | number:'1.2-2' }} DT</span>
+      <span class="stat-sub">Max : {{ statistiques.prixMaximumCatalogue | number:'1.2-2' }} DT</span>
     </div>
   </div>
 
@@ -169,7 +169,7 @@
     </div>
 
     <div class="filter-col">
-      <label class="form-label">Budget max (€)</label>
+      <label class="form-label">Budget max (DT)</label>
       <input type="number" [(ngModel)]="criteres.prixMax" placeholder="Illimité" class="form-control" />
     </div>
 
@@ -294,8 +294,8 @@
       <!-- Card Footer -->
       <div class="card-bottom">
         <div class="price-box">
-          <span *ngIf="v.enPromotion && v.prixBase" class="old-price">{{ v.prixBase | number:'1.2-2' }} €</span>
-          <span class="current-price">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} <small>€</small></span>
+          <span *ngIf="v.enPromotion && v.prixBase" class="old-price">{{ v.prixBase | number:'1.2-2' }} DT</span>
+          <span class="current-price">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} <small>DT</small></span>
         </div>
 
         <div class="card-actions">
@@ -343,8 +343,8 @@
           <div class="price-banner">
             <span class="banner-lbl">Tarif par passager</span>
             <div class="banner-price">
-              <span class="price-strike" *ngIf="offreConsultee.enPromotion">{{ offreConsultee.prixBase | number:'1.2-2' }} €</span>
-              <span class="price-main">{{ (offreConsultee.prixEffectif || offreConsultee.prixBase) | number:'1.2-2' }} €</span>
+              <span class="price-strike" *ngIf="offreConsultee.enPromotion">{{ offreConsultee.prixBase | number:'1.2-2' }} DT</span>
+              <span class="price-main">{{ (offreConsultee.prixEffectif || offreConsultee.prixBase) | number:'1.2-2' }} DT</span>
             </div>
             <span class="stock-badge" [class.badge-danger]="offreConsultee.placesDisponibles < 5">
               {{ offreConsultee.placesDisponibles > 0 ? 'Disponible immédiatement' : 'Complet' }}
@@ -359,7 +359,7 @@
         <div class="similar-grid">
           <div class="similar-card" *ngFor="let s of (suggestionsOffre.offresSimilaires || []).slice(0, 3)" (click)="consulterVoyage(s.id)">
             <div class="similar-dest">{{ s.villeDestination }} ({{ s.typeTransport }})</div>
-            <div class="similar-price">{{ (s.prixEffectif || s.prixBase) | number:'1.2-2' }} €</div>
+            <div class="similar-price">{{ (s.prixEffectif || s.prixBase) | number:'1.2-2' }} DT</div>
           </div>
         </div>
       </div>
@@ -391,7 +391,7 @@
         <div class="banner-body">
           <h4>Synthèse de la Recommandation</h4>
           <p>{{ comparaisonResult.syntheseRecommandation }}</p>
-          <small>Écart de prix maximal : <strong>{{ comparaisonResult.ecartPrixMax | number:'1.2-2' }} €</strong></small>
+          <small>Écart de prix maximal : <strong>{{ comparaisonResult.ecartPrixMax | number:'1.2-2' }} DT</strong></small>
         </div>
       </div>
 
@@ -411,7 +411,7 @@
             <tr>
               <td class="font-bold">Prix effectif</td>
               <td *ngFor="let off of comparaisonResult.offresComparees" class="font-bold text-primary font-size-lg">
-                {{ (off.prixEffectif || off.prixBase) | number:'1.2-2' }} €
+                {{ (off.prixEffectif || off.prixBase) | number:'1.2-2' }} DT
               </td>
             </tr>
             <tr>
@@ -469,7 +469,7 @@
         <div class="suggestions-cards">
           <div class="sugg-card" *ngFor="let v of (suggestionsResult.offresTendances || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
             <div class="sugg-title">{{ v.titre }}</div>
-            <div class="sugg-sub">{{ v.villeDestination }} • {{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} €</div>
+            <div class="sugg-sub">{{ v.villeDestination }} • {{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} DT</div>
           </div>
         </div>
       </div>
@@ -479,7 +479,7 @@
         <div class="suggestions-cards">
           <div class="sugg-card" *ngFor="let v of (suggestionsResult.meilleuresPromotions || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
             <div class="sugg-title">{{ v.titre }}</div>
-            <div class="sugg-sub text-success font-bold">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} € (-{{ v.pourcentageReduction }}%)</div>
+            <div class="sugg-sub text-success font-bold">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} DT (-{{ v.pourcentageReduction }}%)</div>
           </div>
         </div>
       </div>
@@ -489,7 +489,7 @@
         <div class="suggestions-cards">
           <div class="sugg-card" *ngFor="let v of (suggestionsResult.petitsBudgets || []).slice(0, 3)" (click)="consulterVoyage(v.id); fermerSuggestions()">
             <div class="sugg-title">{{ v.titre }}</div>
-            <div class="sugg-sub text-primary">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} €</div>
+            <div class="sugg-sub text-primary">{{ (v.prixEffectif || v.prixBase) | number:'1.2-2' }} DT</div>
           </div>
         </div>
       </div>
@@ -577,7 +577,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Prix Base (€) *</label>
+            <label class="form-label">Prix Base (DT) *</label>
             <input type="number" formControlName="prixBase" class="form-control" />
           </div>
 

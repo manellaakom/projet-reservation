@@ -100,13 +100,13 @@ public class RechercheConsultationController {
         return ResponseEntity.ok(service.rechercherEtFiltrerVoyages(criteres));
     }
 
-    @GetMapping("/voyages/{id}")
+    @GetMapping("/voyages/{id:\\d+}")
     @Operation(summary = "3. [READ ONE] Consulter les détails d'un voyage par son ID")
     public ResponseEntity<VoyageResponse> consulterVoyage(@PathVariable Long id) {
         return ResponseEntity.ok(service.consulterVoyageParId(id));
     }
 
-    @PutMapping("/voyages/{id}")
+    @PutMapping("/voyages/{id:\\d+}")
     @Operation(summary = "4. [UPDATE] Modifier une offre de voyage existante", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<VoyageResponse> modifierVoyage(
             @PathVariable Long id,
@@ -114,7 +114,7 @@ public class RechercheConsultationController {
         return ResponseEntity.ok(service.modifierVoyage(id, request));
     }
 
-    @DeleteMapping("/voyages/{id}")
+    @DeleteMapping("/voyages/{id:\\d+}")
     @Operation(summary = "5. [DELETE] Supprimer une offre de voyage", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<Void> supprimerVoyage(@PathVariable Long id) {
         service.supprimerVoyage(id);
@@ -158,7 +158,7 @@ public class RechercheConsultationController {
         return ResponseEntity.ok(service.obtenirSuggestionsPourOffre(id));
     }
 
-    @GetMapping("/statistiques")
+    @GetMapping(value = {"/statistiques", "/voyages/statistiques"})
     @Operation(summary = "Obtenir les statistiques du catalogue et les filtres disponibles")
     public ResponseEntity<StatistiquesRechercheResponse> getStatistiques() {
         return ResponseEntity.ok(service.getStatistiquesEtFiltres());
