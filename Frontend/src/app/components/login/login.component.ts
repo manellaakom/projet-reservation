@@ -19,6 +19,8 @@ export class LoginComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
+  activeTab: 'express' | 'credentials' = 'express';
+
   currentUser: UserProfile | null = null;
   returnUrl: string = '/';
 
@@ -29,13 +31,49 @@ export class LoginComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
+  setTab(tab: 'express' | 'credentials'): void {
+    this.activeTab = tab;
+    this.errorMessage = null;
+    this.cdr.detectChanges();
+  }
+
   ngOnInit(): void {
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+    const rawReturn = this.route.snapshot.queryParams['returnUrl'];
+    if (rawReturn) {
+      try {
+        this.returnUrl = decodeURIComponent(rawReturn);
+      } catch {
+        this.returnUrl = rawReturn;
+      }
+    } else {
+      this.returnUrl = '/';
+    }
+
+    if (this.returnUrl.startsWith('/login')) {
+      this.returnUrl = '/';
+    }
 
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       this.cdr.detectChanges();
     });
+
+    // Si l'utilisateur est déjà authentifié avec une session valide et qu'une URL cible est demandée
+    if (this.authService.isAuthenticated() && this.returnUrl && this.returnUrl !== '/' && !this.returnUrl.startsWith('/login')) {
+      this.successMessage = `Session active détectée. Redirection vers votre destination...`;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.continueToReturnUrl();
+      }, 500);
+    }
+  }
+
+  continueToReturnUrl(): void {
+    if (this.returnUrl && this.returnUrl !== '/' && !this.returnUrl.startsWith('/login')) {
+      this.router.navigateByUrl(this.returnUrl);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   loginAs(userType: 'admin' | 'voyageur'): void {
@@ -63,10 +101,10 @@ export class LoginComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         const role = this.authService.isAdmin() ? 'Administrateur' : 'Voyageur';
-        this.successMessage = `Connexion réussie ! Bienvenue, ${this.username} (${role}). Redirection vers l'application...`;
+        this.successMessage = `Connexion réussie ! Bienvenue, ${this.username} (${role}). Redirection vers votre destination...`;
         this.cdr.detectChanges();
         setTimeout(() => {
-          this.router.navigateByUrl(this.returnUrl);
+          this.continueToReturnUrl();
         }, 500);
       },
       error: (err) => {

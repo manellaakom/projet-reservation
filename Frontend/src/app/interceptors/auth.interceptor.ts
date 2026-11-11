@@ -25,10 +25,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(modifiedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Déconnexion automatique si la Gateway ou le microservice rejette le token (401)
-      if (error.status === 401) {
-        authService.logout();
-      }
+      // Ne pas déconnecter automatiquement pour éviter les cascades de 401 et boucles infinies
       return throwError(() => error);
     })
   );

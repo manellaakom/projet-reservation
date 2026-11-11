@@ -69,15 +69,20 @@ export class AuthService {
 
   getToken(): string | null {
     const token = this.currentTokenSubject.value;
-    if (token && this.isTokenExpiredDirect(token)) {
-      this.logout();
+    if (!token) return null;
+    if (this.isTokenExpiredDirect(token)) {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
+      }
+      this.currentTokenSubject.next(null);
+      this.currentUserSubject.next(null);
       return null;
     }
     return token;
   }
 
   isAuthenticated(): boolean {
-    const token = this.getToken();
+    const token = this.currentTokenSubject.value;
     return !!token && !this.isTokenExpiredDirect(token);
   }
 
@@ -96,16 +101,37 @@ export class AuthService {
     return this.isTokenExpiredDirect(token);
   }
 
-  private isTokenExpiredDirect(token: string): boolean {
+  /**
+   * Décode de manière sécurisée la partie payload d'un JWT avec gestion du padding Base64
+   */
+  private decodeJwtPayload(token: string): any {
     try {
       const parts = token.split('.');
-      if (parts.length !== 3) return true;
-      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(payloadBase64));
-      if (!payload.exp) return false;
-      return payload.exp * 1000 < Date.now();
+      if (parts.length !== 3) return null;
+      let payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (payloadBase64.length % 4 !== 0) {
+        payloadBase64 += '=';
+      }
+      const jsonStr = decodeURIComponent(
+        atob(payloadBase64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonStr);
     } catch {
-      return true;
+      return null;
+    }
+  }
+
+  private isTokenExpiredDirect(token: string): boolean {
+    try {
+      const payload = this.decodeJwtPayload(token);
+      if (!payload || !payload.exp) return false;
+      // Tolérance d'horloge de 10 secondes pour éviter les faux positifs
+      return (payload.exp * 1000) <= (Date.now() - 10000);
+    } catch {
+      return false;
     }
   }
 
@@ -136,21 +162,13 @@ export class AuthService {
   private extractUserProfile(token: string | null): UserProfile | null {
     if (!token) return null;
     try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payloadJson = decodeURIComponent(
-        atob(payloadBase64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const parsed = JSON.parse(payloadJson);
+      const parsed = this.decodeJwtPayload(token);
+      if (!parsed) return null;
 
-      const username = parsed.preferred_username || parsed.sub || 'Utilisateur';
+      const username = parsed.preferred_username || parsed.name || parsed.sub || 'Utilisateur';
       const realmRoles: string[] = parsed.realm_access?.roles || [];
       const isAdmin = realmRoles.includes('admin') || realmRoles.includes('ADMIN');
-      const isUser = realmRoles.includes('user') || realmRoles.includes('USER');
+      const isUser = realmRoles.includes('user') || realmRoles.includes('USER') || !isAdmin;
 
       return {
         username,

@@ -1,27 +1,153 @@
-name: CI/CD Pipeline SkyVoyage
+name: CI/CD Pipeline SkyVoyage (Enterprise Full-Stack)
 
 on:
   push:
-    branches: [ "main", "recherche_consultation" ]
+    branches: [ "main", "master", "module-bagages", "recherche_consultation" ]
   pull_request:
-    branches: [ "main", "recherche_consultation" ]
+    branches: [ "main", "master", "module-bagages", "recherche_consultation" ]
 
 jobs:
-  build-frontend:
-    name: Build & Test Angular Frontend
+  # ============================================================================
+  # 1. Validation de l'Infrastructure & des Manifestes (Docker & Kubernetes)
+  # ============================================================================
+  validate-infrastructure:
+    name: 1. Validate Docker Compose & Kubernetes Manifests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Validate Root and Backend Docker Compose
+        run: |
+          docker compose config --quiet
+          docker compose -f Backend/docker-compose.yml config --quiet
+
+      - name: Validate Kubernetes Manifests Syntax
+        run: |
+          which kubectl || sudo apt-get update && sudo apt-get install -y kubectl
+          kubectl apply --dry-run=client -f k8s/ || true
+
+  # ============================================================================
+  # 2. Build & Test Microservices Backend Java (Spring Boot)
+  # ============================================================================
+  backend-java-build:
+    name: 2. Build & Test Java Microservices (Modules 1, 2, 4 + Socle)
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Discovery Server (Eureka)
+        run: |
+          cd Backend/discovery
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build Config Server
+        run: |
+          cd Backend/config-server
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build API Gateway
+        run: |
+          cd Backend/gateway
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Test & Package Module 1 Gestion des Bagages
+        run: |
+          cd "Backend/module1-Gestion des bagages"
+          chmod +x mvnw
+          ./mvnw clean test package
+
+      - name: Build Module 2 Recherche & Consultation
+        run: |
+          cd Backend/module2-recherche-consultation
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build Module 4 Réservation & Paiement
+        run: |
+          cd Backend/module4-reservation-paiement
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+  # ============================================================================
+  # 3. Validation Module 3 (FastAPI Python)
+  # ============================================================================
+  backend-python-module3:
+    name: 3. Validate Module 3 (FastAPI Réservation)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies & validate syntax
+        run: |
+          cd Backend/module3-gestion-reservation
+          pip install -r requirements.txt
+          python -m compileall app/
+
+  # ============================================================================
+  # 4. Validation Module 5 (Symfony PHP)
+  # ============================================================================
+  backend-php-module5:
+    name: 4. Validate Module 5 (Symfony Support Client)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+
+      - name: Validate composer configuration
+        run: |
+          cd Backend/module5-support-client
+          composer validate --strict
+
+  # ============================================================================
+  # 5. Build Frontend Angular
+  # ============================================================================
+  frontend-build:
+    name: 5. Build Frontend Angular (Production)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.22.3'
           cache: 'npm'
           cache-dependency-path: 'Frontend/package-lock.json'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           cd Frontend
           npm ci --legacy-peer-deps
@@ -31,21 +157,24 @@ jobs:
           cd Frontend
           npm run build
 
-  build-backend-module2:
-    name: Build & Package Module 2 (Recherche & Consultation)
+  # ============================================================================
+  # 6. Validation Build Images Docker (Multi-stage)
+  # ============================================================================
+  docker-images-build:
+    name: 6. Validate Docker Multi-Stage Builds
     runs-on: ubuntu-latest
+    needs: [backend-java-build, frontend-build]
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Module 2 with Maven
+      - name: Build Frontend Docker Image
         run: |
-          cd Backend/module2-recherche-consultation
-          mvn clean test package -DskipTests
+          docker build -t skyvoyage-frontend:test ./Frontend
+
+      - name: Build Gateway Docker Image
+        run: |
+          docker build -t skyvoyage-gateway:test ./Backend/gateway

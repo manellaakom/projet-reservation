@@ -322,14 +322,23 @@ export class PaiementsComponent implements OnInit {
   }
 
   private emptyCheckoutForm(): PaymeeCheckoutRequest {
-    const user = this.authService.getCurrentUser();
-    const uname = user?.username || 'Voyageur';
+    let uname = 'Voyageur';
+    try {
+      if (this.authService && typeof this.authService.getCurrentUser === 'function') {
+        const user = this.authService.getCurrentUser();
+        if (user && user.username) {
+          uname = user.username;
+        }
+      }
+    } catch {
+      // Safe fallback if authService is not yet injected
+    }
     return {
       montant: 0,
       reference: '',
       firstName: uname,
       lastName: 'Tunisie',
-      email: `${uname.toLowerCase().replace(/[^a-z0-9]/g, '')}@skyvoyage.tn`,
+      email: `${uname.toLowerCase().replace(/[^a-z0-9]/g, '') || 'client'}@skyvoyage.tn`,
       phone: '22333444'
     };
   }

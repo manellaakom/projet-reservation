@@ -1,0 +1,809 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: skyvoyage
+  labels:
+    app.kubernetes.io/name: skyvoyage
+    environment: production
+---
+# ============================================================================
+# ConfigMap & Secrets Globaux
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skyvoyage-config
+  namespace: skyvoyage
+data:
+  EUREKA_SERVER_URL: "http://discovery-service:8761/eureka/"
+  SPRING_PROFILES_ACTIVE: "prod,docker"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  MYSQL_HOST: "mysql-service"
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: "recherche_consultation_db"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "projet_reservation"
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+  KEYCLOAK_ISSUER_URI: "http://keycloak-service:8080/realms/skyvoyage"
+  KEYCLOAK_JWK_SET_URI: "http://keycloak-service:8080/realms/skyvoyage/protocol/openid-connect/certs"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: skyvoyage-secrets
+  namespace: skyvoyage
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "rootpassword"
+  POSTGRES_PASSWORD: "postgres123"
+  KEYCLOAK_ADMIN_PASSWORD: "admin"
+---
+# ============================================================================
+# 1. Infrastructure Technique (Redis, MySQL, PostgreSQL, RabbitMQ)
+# ============================================================================
+# --- Redis ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-service
+  template:
+    metadata:
+      labels:
+        app: redis-service
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: redis-service
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+# --- MySQL (Module 2 & Module 3) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-service
+  template:
+    metadata:
+      labels:
+        app: mysql-service
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"
+            - name: MYSQL_DATABASE
+              value: "recherche_consultation_db"
+          ports:
+            - containerPort: 3306
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "768Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: mysql-service
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# --- RabbitMQ (AMQP Event Bus) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-service
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-service
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management-alpine
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: rabbitmq-service
+  ports:
+    - port: 5672
+      name: amqp
+      targetPort: 5672
+    - port: 15672
+      name: management
+      targetPort: 15672
+---
+# --- PostgreSQL (Module 5 Support Client) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-service
+  template:
+    metadata:
+      labels:
+        app: postgres-service
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: "projet_reservation"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: skyvoyage-secrets
+                  key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 5432
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: postgres-service
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# ============================================================================
+# 2. IAM & Sécurité (Keycloak)
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-service
+  template:
+    metadata:
+      labels:
+        app: keycloak-service
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:24.0.5
+          args: ["start-dev"]
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: skyvoyage-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: keycloak-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# ============================================================================
+# 3. Socle Technique Spring Cloud (Discovery, Config Server, Gateway)
+# ============================================================================
+# --- Eureka Discovery ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-service
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-service
+  template:
+    metadata:
+      labels:
+        app: discovery-service
+    spec:
+      containers:
+        - name: discovery
+          image: skyvoyage/discovery:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8761
+          env:
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: "discovery-service"
+            - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+              value: "false"
+            - name: EUREKA_CLIENT_FETCH_REGISTRY
+              value: "false"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-service
+  namespace: skyvoyage
+spec:
+  selector:
+    app: discovery-service
+  ports:
+    - port: 8761
+      targetPort: 8761
+---
+# --- Spring Cloud Config Server ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  namespace: skyvoyage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      containers:
+        - name: config-server
+          image: skyvoyage/config-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8888
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: skyvoyage
+spec:
+  selector:
+    app: config-server
+  ports:
+    - port: 8888
+      targetPort: 8888
+---
+# --- Spring Cloud API Gateway ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: skyvoyage/gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+            - name: RECHERCHE_URI
+              value: "http://recherche-consultation:8082"
+            - name: BAGAGES_URI
+              value: "http://gestion-bagages:8081"
+            - name: PAIEMENTS_URI
+              value: "http://reservation-paiement:8084"
+            - name: RESERVATIONS_URI
+              value: "http://gestion-reservation:8003"
+            - name: SUPPORT_URI
+              value: "http://support-client:80"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: skyvoyage
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# ============================================================================
+# 4. Microservices Métier (Modules 1 à 5)
+# ============================================================================
+# --- Module 1: Gestion des Bagages ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gestion-bagages
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gestion-bagages
+  template:
+    metadata:
+      labels:
+        app: gestion-bagages
+    spec:
+      containers:
+        - name: gestion-bagages
+          image: skyvoyage/gestion-bagages:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "redis-service"
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq-service"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gestion-bagages
+  namespace: skyvoyage
+spec:
+  selector:
+    app: gestion-bagages
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# --- Module 2: Recherche & Consultation ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recherche-consultation
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: recherche-consultation
+  template:
+    metadata:
+      labels:
+        app: recherche-consultation
+    spec:
+      containers:
+        - name: recherche-consultation
+          image: skyvoyage/recherche-consultation:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql-service:3306/recherche_consultation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq-service"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recherche-consultation
+  namespace: skyvoyage
+spec:
+  selector:
+    app: recherche-consultation
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+# --- Module 3: Gestion des Réservations (FastAPI) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gestion-reservation
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gestion-reservation
+  template:
+    metadata:
+      labels:
+        app: gestion-reservation
+    spec:
+      containers:
+        - name: gestion-reservation
+          image: skyvoyage/gestion-reservation:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8003
+          env:
+            - name: DB_HOST
+              value: "mysql-service"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: "root"
+            - name: DB_PASSWORD
+              value: ""
+            - name: DB_NAME
+              value: "reservation_db"
+            - name: EUREKA_ENABLED
+              value: "true"
+            - name: EUREKA_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+            - name: EUREKA_INSTANCE_HOST
+              value: "gestion-reservation"
+            - name: EUREKA_INSTANCE_PORT
+              value: "8003"
+            - name: EUREKA_APP_NAME
+              value: "RESERVATION-SERVICE"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "400m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gestion-reservation
+  namespace: skyvoyage
+spec:
+  selector:
+    app: gestion-reservation
+  ports:
+    - port: 8003
+      targetPort: 8003
+---
+# --- Module 4: Réservation & Paiement ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation-paiement
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reservation-paiement
+  template:
+    metadata:
+      labels:
+        app: reservation-paiement
+    spec:
+      containers:
+        - name: reservation-paiement
+          image: skyvoyage/reservation-paiement:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: skyvoyage-config
+                  key: EUREKA_SERVER_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservation-paiement
+  namespace: skyvoyage
+spec:
+  selector:
+    app: reservation-paiement
+  ports:
+    - port: 8084
+      targetPort: 8084
+---
+# --- Module 5: Support Client (Symfony PHP) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: support-client
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: support-client
+  template:
+    metadata:
+      labels:
+        app: support-client
+    spec:
+      containers:
+        - name: support-client
+          image: skyvoyage/support-client:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:postgres123@postgres-service:5432/projet_reservation?serverVersion=16&charset=utf8"
+            - name: EUREKA_SERVER_URL
+              value: "http://discovery-service:8761/eureka"
+            - name: EUREKA_APP_NAME
+              value: "SUPPORT-CLIENT-BACKEND"
+            - name: EUREKA_HOST
+              value: "support-client"
+            - name: EUREKA_PORT
+              value: "80"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "400m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: support-client
+  namespace: skyvoyage
+spec:
+  selector:
+    app: support-client
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# ============================================================================
+# 5. Frontend Angular (Nginx SPA)
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: skyvoyage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: skyvoyage/frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: skyvoyage
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# ============================================================================
+# 6. Ingress HTTP Controller (Routage Public vers Frontend & API Gateway)
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: skyvoyage-ingress
+  namespace: skyvoyage
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+spec:
+  rules:
+    - http:
+        paths:
+          # Frontend SPA (Pages, Assets, Static files)
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          # API Gateway (Routage unifié de tous les microservices)
+          - path: /(api/.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          # Keycloak Auth UI & Token endpoints
+          - path: /(realms/.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080

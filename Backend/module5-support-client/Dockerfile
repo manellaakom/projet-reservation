@@ -10,4 +10,7 @@ RUN mkdir -p /var/www/html/var /var/www/html/public && chown -R www-data:www-dat
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-interaction --optimize-autoloader
+RUN chmod +x /var/www/html/docker-entrypoint.sh
+
 EXPOSE 80
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
