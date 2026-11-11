@@ -1,0 +1,78 @@
+name: SkyVoyage CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master", "module-bagages" ]
+  pull_request:
+    branches: [ "main", "master", "module-bagages" ]
+
+jobs:
+  backend-build:
+    name: Build & Test Backend Microservices
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Discovery Server (Eureka)
+        run: |
+          cd Backend/discovery
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build Config Server
+        run: |
+          cd Backend/config-server
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build API Gateway
+        run: |
+          cd Backend/gateway
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Test & Package Module 1 Gestion des Bagages
+        run: |
+          cd "Backend/module1-Gestion des bagages"
+          chmod +x mvnw
+          ./mvnw clean test package
+
+  frontend-build:
+    name: Build Frontend Angular
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd Frontend
+          npm ci
+
+      - name: Build Angular Application
+        run: |
+          cd Frontend
+          npm run build

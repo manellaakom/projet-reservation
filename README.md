@@ -5,8 +5,7 @@
 [![Spring Boot](https://img.shields.io/badge/Backend-Spring%20Boot%203-6DB33F.svg?logo=springboot)](http://localhost:8080)
 [![Keycloak](https://img.shields.io/badge/Security-Keycloak%20OIDC-008080.svg?logo=keycloak)](http://localhost:8180)
 [![Docker](https://img.shields.io/badge/Container-Docker%20Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
-
-Projet d'évaluation **« Applications Web Distribuées (AWD) »** validant l'ensemble des critères de la grille d'évaluation académique (20/20).
+SkyVoyage est une plateforme cloud-native modulaire basée sur une architecture microservices distribuée.
 
 ---
 
@@ -49,26 +48,7 @@ Projet d'évaluation **« Applications Web Distribuées (AWD) »** validant l'en
 +-------------------------------+              +-----------------------------------+
 ```
 
----
 
-## 📋 Matrice de Validation de la Grille AWD (20 / 20)
-
-| Rubrique de la Grille | Barème | Statut | Emplacement / Implémentation |
-| :--- | :---: | :---: | :--- |
-| **Micro-service Spring Boot** | **1,5 pt** | ✅ Validé | `Backend/module2-recherche-consultation` (CRUD complet de l'entité Voyage, DTO, Repository, Mapper, Service). |
-| **Compréhension du code** | **3,0 pts** | ✅ Validé | Architecture en couches, patterns REST, DTO pattern, Specification dynamique, gestion d'erreurs globale. |
-| **Micro-service Technologie Avancée + BD** | **2,0 pts** | ✅ Validé | Polyglot : Python/FastAPI (`module3`), Spring Boot + Redis NoSQL (`module1`), Symfony/PHP (`module5`), MySQL 8. |
-| **Serveur de découverte (Eureka)** | **1,0 pt** | ✅ Validé | `Backend/discovery` (`@EnableEurekaServer` sur port **8761**). Gateway et microservices auto-enregistrés. |
-| **Config Server** | **1,0 pt** | ✅ Validé | `Backend/config-server` (Port **8888**), distribution centralisée des profils applicatifs. |
-| **API Gateway** | **1,0 pt** | ✅ Validé | `Backend/gateway` (Port **8080**), routage centralisé vers tous les microservices et Swagger. |
-| **Sécurité (Keycloak & JWT)** | **1,5 pt** | ✅ Validé | Keycloak 24 (**8180**) Realm `skyvoyage`, Spring Security JWT Resource Server, RBAC (`ROLE_ADMIN`, `ROLE_USER`). |
-| **Git et Documentation** | **1,0 pt** | ✅ Validé | Commits réguliers et sémantiques, README détaillé, guide de révision technique. |
-| **Docker Compose** | **2,0 pts** | ✅ Validé | `docker-compose.yml` (MySQL, RabbitMQ, Keycloak, Redis, Microservice conteneurisé sur port 9082). |
-| **Partie Frontend** | **2,0 pts** | ✅ Validé | Angular 19 autonome, catalogue indépendant, Dashboard simple, gestion bagages, rôle Voyageur vs Admin. |
-| **Communication Entre les MS** | **2,0 pts** | ✅ Validé | Synchrone : **OpenFeign** (3 scénarios). Asynchrone : **RabbitMQ** (3 scénarios avec Producer/Consumer). |
-| **Valeurs Ajoutées** | **2,0 pts** | ✅ Validé | Swagger centralisé sur Gateway 8080, Prometheus + Grafana metrics, Pipeline CI/CD GitHub Actions. |
-
----
 
 ## 🚀 Démarrage Rapide
 
