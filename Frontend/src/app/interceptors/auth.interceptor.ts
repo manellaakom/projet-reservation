@@ -25,8 +25,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(modifiedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Déconnecter UNIQUEMENT si un token existait et est effectivement expiré
-      if (error.status === 401 && token && authService.isTokenExpired()) {
+      // Déconnexion automatique si la Gateway ou le microservice rejette le token (401)
+      if (error.status === 401) {
         authService.logout();
       }
       return throwError(() => error);

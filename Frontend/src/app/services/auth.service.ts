@@ -68,11 +68,17 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return this.currentTokenSubject.value;
+    const token = this.currentTokenSubject.value;
+    if (token && this.isTokenExpiredDirect(token)) {
+      this.logout();
+      return null;
+    }
+    return token;
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    return !!token && !this.isTokenExpiredDirect(token);
   }
 
   isAdmin(): boolean {
@@ -85,8 +91,12 @@ export class AuthService {
   }
 
   isTokenExpired(): boolean {
-    const token = this.getToken();
+    const token = this.currentTokenSubject.value;
     if (!token) return true;
+    return this.isTokenExpiredDirect(token);
+  }
+
+  private isTokenExpiredDirect(token: string): boolean {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) return true;
@@ -109,7 +119,12 @@ export class AuthService {
 
   private getStoredToken(): string | null {
     if (typeof sessionStorage !== 'undefined') {
-      return sessionStorage.getItem(this.TOKEN_STORAGE_KEY);
+      const token = sessionStorage.getItem(this.TOKEN_STORAGE_KEY);
+      if (token && this.isTokenExpiredDirect(token)) {
+        sessionStorage.removeItem(this.TOKEN_STORAGE_KEY);
+        return null;
+      }
+      return token;
     }
     return null;
   }

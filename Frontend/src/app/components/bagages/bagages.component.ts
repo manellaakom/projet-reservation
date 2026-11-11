@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, ApplicationRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
 import { BagageService } from '../../services/bagage.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
@@ -60,7 +61,7 @@ function categoryWeightConsistencyValidator(control: AbstractControl): Validatio
 @Component({
   selector: 'app-bagages',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './bagages.component.html',
   styleUrls: ['./bagages.component.scss']
 })
@@ -132,12 +133,17 @@ export class BagagesComponent implements OnInit {
 
   constructor(
     private bagageService: BagageService,
-    private authService: AuthService,
+    public authService: AuthService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
-    private appRef: ApplicationRef
+    private appRef: ApplicationRef,
+    private router: Router
   ) {
     this.initForm();
+  }
+
+  goToLogin(): void {
+    this.router.navigate(['/login'], { queryParams: { returnUrl: '/bagages' } });
   }
 
   ngOnInit(): void {

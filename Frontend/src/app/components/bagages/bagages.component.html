@@ -51,7 +51,10 @@
     <p>{{ error }}</p>
     <small>Vérifiez que Docker Redis (`localhost:6379`), Eureka (`localhost:8761`) et la Gateway (`localhost:8080`) sont actifs.</small>
   </div>
-  <button class="btn btn-outline" (click)="loadAllData()">Réessayer</button>
+  <div class="banner-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+    <button class="btn btn-outline" (click)="loadAllData()">Réessayer</button>
+    <button *ngIf="!currentUser || error.includes('Session non authentifiée') || error.includes('authentifiée')" class="btn btn-primary" (click)="goToLogin()">Se connecter</button>
+  </div>
 </div>
 
 <!-- Cartes de Statistiques (Style Sakai PrimeNG) - Réservé aux Administrateurs -->
