@@ -2,13 +2,31 @@ name: SkyVoyage CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "master", "module-bagages" ]
+    branches: [ "main", "master", "module-bagages", "recherche_consultation" ]
   pull_request:
-    branches: [ "main", "master", "module-bagages" ]
+    branches: [ "main", "master", "module-bagages", "recherche_consultation" ]
 
 jobs:
-  backend-build:
-    name: Build & Test Backend Microservices
+  # ============================================================================
+  # 1. Validation de la configuration Docker Compose
+  # ============================================================================
+  docker-compose-check:
+    name: Validate Docker Compose Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Root and Backend Docker Compose
+        run: |
+          docker compose config --quiet
+          docker compose -f Backend/docker-compose.yml config --quiet
+
+  # ============================================================================
+  # 2. Build & Test Microservices Backend Java (Spring Boot)
+  # ============================================================================
+  backend-java-build:
+    name: Build & Test Java Microservices (Modules 1, 2, 4 + Socle)
     runs-on: ubuntu-latest
 
     services:
@@ -52,6 +70,63 @@ jobs:
           chmod +x mvnw
           ./mvnw clean test package
 
+      - name: Build Module 2 Recherche & Consultation
+        run: |
+          cd Backend/module2-recherche-consultation
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Build Module 4 Réservation & Paiement
+        run: |
+          cd Backend/module4-reservation-paiement
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+  # ============================================================================
+  # 3. Validation Module 3 (FastAPI Python)
+  # ============================================================================
+  backend-python-module3:
+    name: Validate Module 3 (FastAPI Réservation)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies & validate syntax
+        run: |
+          cd Backend/module3-gestion-reservation
+          pip install -r requirements.txt
+          python -m compileall app/
+
+  # ============================================================================
+  # 4. Validation Module 5 (Symfony PHP)
+  # ============================================================================
+  backend-php-module5:
+    name: Validate Module 5 (Symfony Support Client)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql
+
+      - name: Validate composer configuration
+        run: |
+          cd Backend/module5-support-client
+          composer validate --strict
+
+  # ============================================================================
+  # 5. Build Frontend Angular
+  # ============================================================================
   frontend-build:
     name: Build Frontend Angular
     runs-on: ubuntu-latest
@@ -70,7 +145,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd Frontend
-          npm ci
+          npm ci --legacy-peer-deps
 
       - name: Build Angular Application
         run: |

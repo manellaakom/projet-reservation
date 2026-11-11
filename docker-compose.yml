@@ -1,0 +1,314 @@
+services:
+  # ============================================================================
+  # 1. Infrastructure & Middlewares
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: skyvoyage-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./docker/redis/data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: skyvoyage-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: skyvoyage-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: recherche_consultation_db
+    volumes:
+      - skyvoyage-mysql-data:/var/lib/mysql
+      - ./Backend/module2-recherche-consultation/database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: skyvoyage-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: projet_reservation
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - skyvoyage-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: skyvoyage-keycloak
+    command: start-dev --import-realm
+    ports:
+      - "8180:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # ============================================================================
+  # 2. Socle Technique Spring Cloud
+  # ============================================================================
+  discovery:
+    build:
+      context: ./Backend/discovery
+      dockerfile: Dockerfile
+    container_name: skyvoyage-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: discovery
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    restart: unless-stopped
+    networks:
+      skyvoyage-net:
+        aliases:
+          - discovery
+          - eureka
+
+  config-server:
+    build:
+      context: ./Backend/config-server
+      dockerfile: Dockerfile
+    container_name: skyvoyage-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: config-server
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+    depends_on:
+      - discovery
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  gateway:
+    build:
+      context: ./Backend/gateway
+      dockerfile: Dockerfile
+    container_name: skyvoyage-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: gateway
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      RECHERCHE_URI: http://recherche-consultation:8082
+      BAGAGES_URI: http://gestion-bagages:8081
+      PAIEMENTS_URI: http://reservation-paiement:8084
+      RESERVATIONS_URI: http://gestion-reservation:8003
+      SUPPORT_URI: http://support-client:80
+    depends_on:
+      - discovery
+      - config-server
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # ============================================================================
+  # 3. Microservices Métier (Modules 1 à 5)
+  # ============================================================================
+  # Module 1 - Gestion des Bagages (Spring Boot / Redis / RabbitMQ / Keycloak)
+  gestion-bagages:
+    build:
+      context: "./Backend/module1-Gestion des bagages"
+      dockerfile: Dockerfile
+    container_name: skyvoyage-gestion-bagages
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: gestion-bagages
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/skyvoyage/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/skyvoyage
+    depends_on:
+      - redis
+      - rabbitmq
+      - discovery
+      - config-server
+      - keycloak
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # Module 2 - Recherche & Consultation (Spring Boot / MySQL / RabbitMQ)
+  recherche-consultation:
+    build:
+      context: ./Backend/module2-recherche-consultation
+      dockerfile: Dockerfile
+    container_name: skyvoyage-recherche-consultation
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/recherche_consultation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      SERVICES_BAGAGES_URL: http://gestion-bagages:8081
+      SERVICES_RESERVATION_URL: http://gestion-reservation:8003
+      SERVICES_PAIEMENT_URL: http://reservation-paiement:8084
+    depends_on:
+      - discovery
+      - mysql
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # Module 3 - Gestion des Réservations (FastAPI / MySQL)
+  gestion-reservation:
+    build:
+      context: ./Backend/module3-gestion-reservation
+      dockerfile: Dockerfile
+    container_name: skyvoyage-gestion-reservation
+    ports:
+      - "8003:8003"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: reservation_db
+      DB_AUTO_CREATE: "true"
+      EUREKA_ENABLED: "true"
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_HOST: gestion-reservation
+      EUREKA_INSTANCE_PORT: 8003
+      EUREKA_APP_NAME: RESERVATION-SERVICE
+    depends_on:
+      - discovery
+      - mysql
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # Module 4 - Réservation & Paiement (Spring Boot / Redis / Paymee)
+  reservation-paiement:
+    build:
+      context: ./Backend/module4-reservation-paiement
+      dockerfile: Dockerfile
+    container_name: skyvoyage-reservation-paiement
+    ports:
+      - "8084:8084"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      PAYMEE_API_KEY: ${PAYMEE_API_KEY:-}
+      PAYMEE_FRONTEND_BASE_URL: ${PAYMEE_FRONTEND_BASE_URL:-http://localhost:4200}
+      PAYMEE_WEBHOOK_URL: ${PAYMEE_WEBHOOK_URL:-http://localhost:8084/api/paiements/paymee/webhook}
+    depends_on:
+      - discovery
+      - redis
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # Module 5 - Support Client (Symfony / PostgreSQL)
+  support-client:
+    build:
+      context: ./Backend/module5-support-client
+      dockerfile: Dockerfile
+    container_name: skyvoyage-support-client
+    ports:
+      - "8000:80"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/projet_reservation?serverVersion=16&charset=utf8
+      EUREKA_SERVER_URL: http://discovery:8761/eureka
+      EUREKA_APP_NAME: SUPPORT-CLIENT-BACKEND
+      EUREKA_HOST: support-client
+      EUREKA_PORT: 80
+    depends_on:
+      - discovery
+      - postgres
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # ============================================================================
+  # 4. Monitoring & Observabilité
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: skyvoyage-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: skyvoyage-grafana
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+networks:
+  skyvoyage-net:
+    name: projet-reservation-bagages-clean_skyvoyage-net
+    external: true
+
+volumes:
+  reservation-redis-data:
+  skyvoyage-mysql-data:
+  skyvoyage-postgres-data:

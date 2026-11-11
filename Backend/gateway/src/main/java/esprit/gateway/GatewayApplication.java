@@ -26,6 +26,7 @@ public class GatewayApplication {
         String rechercheUri = System.getenv().getOrDefault("RECHERCHE_URI", "http://" + defaultHost + ":8082");
         String bagagesUri = System.getenv().getOrDefault("BAGAGES_URI", "http://" + defaultHost + ":8081");
         String paiementsUri = System.getenv().getOrDefault("PAIEMENTS_URI", "http://" + defaultHost + ":8084");
+        String reservationsUri = System.getenv().getOrDefault("RESERVATIONS_URI", "http://" + defaultHost + ":8003");
         String supportUri = System.getenv().getOrDefault("SUPPORT_URI", "http://" + defaultHost + ":8000");
 
         return builder.routes()
@@ -49,7 +50,7 @@ public class GatewayApplication {
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
                         .uri(paiementsUri))
                 .route("reservations", route -> route.path("/api/v1/**")
-                        .uri("http://" + defaultHost + ":8003"))
+                        .uri(reservationsUri))
                 .route("support", route -> route.path("/support/**", "/api/support-requests/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
