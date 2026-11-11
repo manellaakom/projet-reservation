@@ -44,4 +44,4 @@ Les scripts générés sont suivis dans `migrations/versions/`. L'autogénérati
 
 ## Périmètre
 
-Les routes HTTP se limitent aux contrôles de santé. Les couches `api`, `schemas`, `repositories` et `services` sont des emplacements préparés avec des TODO ; aucune logique métier ni communication interservices n'est implémentée.
+Endpoints : `/api/v1/reservations` (creation, confirmation `PUT /{id}/confirmer`, annulation `PATCH /{id}/annuler`), `/api/v1/disponibilites` et `/api/v1/voyageurs`. Tests : `pip install -r requirements-dev.txt && pytest tests`.

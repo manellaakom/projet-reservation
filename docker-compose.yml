@@ -129,10 +129,7 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      RECHERCHE_URI: http://recherche-consultation:8082
-      BAGAGES_URI: http://gestion-bagages:8081
-      PAIEMENTS_URI: http://reservation-paiement:8084
-      RESERVATIONS_URI: http://gestion-reservation:8003
+      # Les services Java/Python sont decouverts via Eureka (lb://) ; Symfony est joint en direct
       SUPPORT_URI: http://support-client:80
     depends_on:
       - discovery
@@ -305,8 +302,7 @@ services:
 
 networks:
   skyvoyage-net:
-    name: projet-reservation-bagages-clean_skyvoyage-net
-    external: true
+    name: skyvoyage-net
 
 volumes:
   reservation-redis-data:

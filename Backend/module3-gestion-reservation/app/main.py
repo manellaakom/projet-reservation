@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import text
 
+from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.database import (
     Base,
@@ -16,6 +17,7 @@ from app.core.database import (
 )
 from app.core.eureka import deregister_from_eureka, register_with_eureka
 from app.models import Billet, Disponibilite, Reservation, Voyageur  # noqa: F401
+from app.services import disponibilite_service
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             "Tables créées/vérifiées : %s",
             sorted(Base.metadata.tables.keys()),
         )
+        with SessionLocal() as db:
+            seeded = disponibilite_service.seed_defaults(db)
+            if seeded:
+                logger.info("Disponibilités initiales créées pour %d voyages", seeded)
     if settings.EUREKA_ENABLED:
         await register_with_eureka()
     try:
@@ -41,6 +47,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
+app.include_router(api_router)
 
 
 @app.get("/health")

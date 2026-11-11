@@ -9,10 +9,13 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import java.net.URI;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "eureka.client.enabled=false",
+        "spring.cloud.discovery.enabled=false"
+})
 class GatewayApplicationTests {
 
     @Autowired
@@ -23,14 +26,16 @@ class GatewayApplicationTests {
     }
 
     @Test
-    void routesExposeRealReservationServices() {
+    void routesUseEurekaLoadBalancing() {
         Map<String, URI> routes = routeLocator.getRoutes()
                 .collectMap(Route::getId, Route::getUri)
                 .block();
 
         assertNotNull(routes);
         assertEquals(URI.create("lb://gestion-bagages"), routes.get("bagages"));
-        assertEquals(URI.create("http://localhost:8003"), routes.get("reservations"));
-        assertEquals(2, routes.size());
+        assertEquals(URI.create("lb://recherche-consultation"), routes.get("recherche"));
+        assertEquals(URI.create("lb://reservation-paiement"), routes.get("paiements"));
+        assertEquals(URI.create("lb://reservation-service"), routes.get("reservations"));
+        assertEquals(URI.create("lb://support-client-backend"), routes.get("support"));
     }
 }

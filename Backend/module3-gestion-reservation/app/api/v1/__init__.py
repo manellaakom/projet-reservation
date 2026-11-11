@@ -1,3 +1,10 @@
 """Routes de la version 1 de l'API."""
 
-# TODO: assembler les routeurs v1.
+from fastapi import APIRouter
+
+from app.api.v1 import disponibilites, reservations, voyageurs
+
+api_router = APIRouter()
+api_router.include_router(reservations.router)
+api_router.include_router(disponibilites.router)
+api_router.include_router(voyageurs.router)

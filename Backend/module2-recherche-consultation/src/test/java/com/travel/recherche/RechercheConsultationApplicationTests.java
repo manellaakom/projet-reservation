@@ -32,7 +32,7 @@ class RechercheConsultationApplicationTests {
         CritereRechercheRequest criteres = CritereRechercheRequest.builder()
                 .villeDestination("Paris")
                 .typeTransport(TypeTransport.VOL)
-                .prixMax(BigDecimal.valueOf(500))
+                .prixMax(BigDecimal.valueOf(600))
                 .sortBy("prix")
                 .sortDir("asc")
                 .build();

@@ -48,6 +48,23 @@ public class PaiementService {
         return PaiementMapper.toResponse(paiementRepository.save(paiement));
     }
 
+    public com.travel.paiement.dto.BagagePaiementDto recordBaggagePayment(com.travel.paiement.dto.BagagePaiementDto dto) {
+        String reference = "BAG-" + (dto.bagageId() != null ? dto.bagageId() : UUID.randomUUID().toString().substring(0, 8));
+        PaiementResponse saved = create(new PaiementRequest(
+                java.math.BigDecimal.valueOf(dto.montant()),
+                java.time.LocalDateTime.now(),
+                "EN_ATTENTE",
+                reference));
+        return new com.travel.paiement.dto.BagagePaiementDto(
+                saved.id(),
+                dto.bagageId(),
+                dto.reservationId(),
+                dto.montant(),
+                dto.devise() != null ? dto.devise() : "TND",
+                saved.statut(),
+                "Montant bagage enregistre dans le module Paiement");
+    }
+
     public PaymeeCheckoutResponse createPaymeeCheckout(PaymeeCheckoutRequest request) {
         paymeeClient.validateConfiguration();
 

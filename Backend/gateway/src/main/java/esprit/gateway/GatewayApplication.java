@@ -22,12 +22,13 @@ public class GatewayApplication {
 
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
-        String defaultHost = System.getenv().getOrDefault("GATEWAY_TARGET_HOST", "host.docker.internal");
-        String rechercheUri = System.getenv().getOrDefault("RECHERCHE_URI", "http://" + defaultHost + ":8082");
-        String bagagesUri = System.getenv().getOrDefault("BAGAGES_URI", "http://" + defaultHost + ":8081");
-        String paiementsUri = System.getenv().getOrDefault("PAIEMENTS_URI", "http://" + defaultHost + ":8084");
-        String reservationsUri = System.getenv().getOrDefault("RESERVATIONS_URI", "http://" + defaultHost + ":8003");
-        String supportUri = System.getenv().getOrDefault("SUPPORT_URI", "http://" + defaultHost + ":8000");
+        // Routage dynamique via Eureka (lb://nom-du-service). Chaque URI peut etre
+        // surchargee par une variable d'environnement (ex: BAGAGES_URI=http://localhost:8081).
+        String rechercheUri = System.getenv().getOrDefault("RECHERCHE_URI", "lb://recherche-consultation");
+        String bagagesUri = System.getenv().getOrDefault("BAGAGES_URI", "lb://gestion-bagages");
+        String paiementsUri = System.getenv().getOrDefault("PAIEMENTS_URI", "lb://reservation-paiement");
+        String reservationsUri = System.getenv().getOrDefault("RESERVATIONS_URI", "lb://reservation-service");
+        String supportUri = System.getenv().getOrDefault("SUPPORT_URI", "lb://support-client-backend");
 
         return builder.routes()
                 .route("root", route -> route.path("/")

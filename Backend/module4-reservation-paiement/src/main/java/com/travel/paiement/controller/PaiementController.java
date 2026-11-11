@@ -1,5 +1,6 @@
 package com.travel.paiement.controller;
 
+import com.travel.paiement.dto.BagagePaiementDto;
 import com.travel.paiement.dto.PaiementRequest;
 import com.travel.paiement.dto.PaiementResponse;
 import com.travel.paiement.dto.PaymeeCheckoutRequest;
@@ -26,6 +27,12 @@ public class PaiementController {
     @PostMapping
     public ResponseEntity<PaiementResponse> create(@Valid @RequestBody PaiementRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paiementService.create(request));
+    }
+
+    /** Appele par le Module 1 (Feign) pour enregistrer le montant d'un bagage. */
+    @PostMapping("/bagages")
+    public ResponseEntity<BagagePaiementDto> recordBaggagePayment(@Valid @RequestBody BagagePaiementDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paiementService.recordBaggagePayment(request));
     }
 
     @PostMapping("/paymee/checkout")

@@ -103,6 +103,12 @@ jobs:
           pip install -r requirements.txt
           python -m compileall app/
 
+      - name: Run module 3 tests
+        run: |
+          cd Backend/module3-gestion-reservation
+          pip install -r requirements-dev.txt
+          python -m pytest -q tests
+
   # ============================================================================
   # 4. Validation Module 5 (Symfony PHP)
   # ============================================================================
