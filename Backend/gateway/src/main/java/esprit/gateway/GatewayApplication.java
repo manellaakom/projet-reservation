@@ -44,7 +44,7 @@ public class GatewayApplication {
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
                         .uri(bagagesUri))
-                .route("paiements", route -> route.path("/api/paiements/**", "/mock-paymee/**")
+                .route("paiements", route -> route.path("/api/paiements/**", "/mock-paymee/**", "/mock/paymee/**")
                         .filters(f -> f.dedupeResponseHeader("Access-Control-Allow-Origin", "RETAIN_LAST")
                                        .dedupeResponseHeader("Access-Control-Allow-Credentials", "RETAIN_LAST"))
                         .uri(paiementsUri))

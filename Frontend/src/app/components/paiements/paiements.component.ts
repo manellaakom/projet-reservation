@@ -76,6 +76,8 @@ export class PaiementsComponent implements OnInit {
     private readonly cdr: ChangeDetectorRef
   ) {}
 
+  bagagesCount: string | null = null;
+
   ngOnInit(): void {
     const paymentId = this.route.snapshot.queryParamMap.get('payment_id');
     const canceledPaymentId = this.route.snapshot.queryParamMap.get('canceled_payment_id');
@@ -88,6 +90,7 @@ export class PaiementsComponent implements OnInit {
     } else {
       const ref = this.route.snapshot.queryParamMap.get('reference');
       const montant = this.route.snapshot.queryParamMap.get('montant');
+      this.bagagesCount = this.route.snapshot.queryParamMap.get('bagagesCount');
       if (ref || montant) {
         this.openOnlineCheckout();
         if (ref) this.checkoutForm.reference = ref;
@@ -319,13 +322,15 @@ export class PaiementsComponent implements OnInit {
   }
 
   private emptyCheckoutForm(): PaymeeCheckoutRequest {
+    const user = this.authService.getCurrentUser();
+    const uname = user?.username || 'Voyageur';
     return {
       montant: 0,
       reference: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: ''
+      firstName: uname,
+      lastName: 'Tunisie',
+      email: `${uname.toLowerCase().replace(/[^a-z0-9]/g, '')}@skyvoyage.tn`,
+      phone: '22333444'
     };
   }
 

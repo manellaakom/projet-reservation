@@ -2,7 +2,10 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { RechercheConsultationService } from '../../services/recherche-consultation.service';
+import { BagageService } from '../../services/bagage.service';
+import { BagageRequest } from '../../models/bagage.model';
 import {
   CategorieOffre,
   ComparaisonResponse,
@@ -497,8 +500,19 @@ export class RechercheConsultationComponent implements OnInit {
   // Toasts
   toasts: Toast[] = [];
 
+  // --- MODALE RÉSERVATION & OPTIONS BAGAGES (INTER-SERVICES MODULE 1 + MODULE 4) ---
+  bookingModalOpen: boolean = false;
+  bookingVoyage: VoyageOffre | null = null;
+  bookingPlaces: number = 1;
+  includeCabine: boolean = false;
+  bagageSouteCount: number = 0;
+  grandBagageCount: number = 0;
+  tempReservationRef: string = '';
+  processingBooking: boolean = false;
+
   constructor(
     private service: RechercheConsultationService,
+    private bagageService: BagageService,
     private fb: FormBuilder,
     public authService: AuthService,
     private route: ActivatedRoute,
@@ -567,14 +581,132 @@ export class RechercheConsultationComponent implements OnInit {
     });
   }
 
-  reserverVoyage(v: VoyageOffre): void {
-    const prix = v.prixEffectif || v.prixPromo || v.prixBase;
-    const ref = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
-    this.showToast('success', 'Réservation Confirmée !', `Votre place sur "${v.titre}" a été réservée (${prix} DT). Redirection vers le paiement en ligne Paymee...`);
+  openBookingModal(v: VoyageOffre): void {
+    this.bookingVoyage = v;
+    this.bookingPlaces = 1;
+    this.includeCabine = !!v.bagageCabineInclus;
+    this.bagageSouteCount = 0;
+    this.grandBagageCount = 0;
+    this.tempReservationRef = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
+    this.bookingModalOpen = true;
     this.cdr.detectChanges();
+  }
+
+  closeBookingModal(): void {
+    if (!this.processingBooking) {
+      this.bookingModalOpen = false;
+      this.bookingVoyage = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  changePlaces(delta: number): void {
+    const next = this.bookingPlaces + delta;
+    if (next >= 1 && next <= 9) {
+      this.bookingPlaces = next;
+      this.cdr.detectChanges();
+    }
+  }
+
+  changeBagageSoute(delta: number): void {
+    const next = this.bagageSouteCount + delta;
+    if (next >= 0 && next <= 4) {
+      this.bagageSouteCount = next;
+      this.cdr.detectChanges();
+    }
+  }
+
+  changeGrandBagage(delta: number): void {
+    const next = this.grandBagageCount + delta;
+    if (next >= 0 && next <= 3) {
+      this.grandBagageCount = next;
+      this.cdr.detectChanges();
+    }
+  }
+
+  get ticketsSubtotal(): number {
+    if (!this.bookingVoyage) return 0;
+    const unitPrice = this.bookingVoyage.prixEffectif || this.bookingVoyage.prixPromo || this.bookingVoyage.prixBase || 0;
+    return unitPrice * this.bookingPlaces;
+  }
+
+  get bagagesSubtotal(): number {
+    if (!this.bookingVoyage) return 0;
+    let sum = 0;
+    if (this.includeCabine && !this.bookingVoyage.bagageCabineInclus) {
+      sum += 30.0;
+    }
+    sum += this.bagageSouteCount * 50.0;
+    sum += this.grandBagageCount * 70.0;
+    return sum;
+  }
+
+  get totalBookingAmount(): number {
+    return Math.round((this.ticketsSubtotal + this.bagagesSubtotal) * 100) / 100;
+  }
+
+  async confirmerEtPayer(): Promise<void> {
+    if (!this.bookingVoyage) return;
+    this.processingBooking = true;
+    const ref = this.tempReservationRef;
+    const totalAmount = this.totalBookingAmount;
+
+    // 1. Préparer les bagages sélectionnés pour envoi vers le Module 1 (Redis)
+    const bagagesToCreate: BagageRequest[] = [];
+    if (this.includeCabine) {
+      bagagesToCreate.push({
+        reservationId: ref,
+        type: 'Cabine (0-10 kg)',
+        poids: 8.5,
+        statut: 'ENREGISTRE',
+        prix: this.bookingVoyage.bagageCabineInclus ? 0 : 30.0
+      });
+    }
+    for (let i = 0; i < this.bagageSouteCount; i++) {
+      bagagesToCreate.push({
+        reservationId: ref,
+        type: 'Soute (10-20 kg)',
+        poids: 18.0,
+        statut: 'ENREGISTRE',
+        prix: 50.0
+      });
+    }
+    for (let i = 0; i < this.grandBagageCount; i++) {
+      bagagesToCreate.push({
+        reservationId: ref,
+        type: 'Grand bagage en soute (20-30 kg)',
+        poids: 26.0,
+        statut: 'ENREGISTRE',
+        prix: 70.0
+      });
+    }
+
+    // 2. Création asynchrone des bagages dans Module 1 (Redis)
+    try {
+      for (const b of bagagesToCreate) {
+        await firstValueFrom(this.bagageService.createBagage(b));
+      }
+    } catch (err) {
+      console.warn('Avertissement enregistrement bagage:', err);
+    }
+
+    this.showToast('success', 'Réservation et bagages validés !', `Dossier ${ref} enregistré avec ${bagagesToCreate.length} bagage(s). Redirection vers le paiement Paymee (${totalAmount} DT)...`);
+    this.processingBooking = false;
+    this.closeBookingModal();
+
     setTimeout(() => {
-      this.router.navigate(['/paiements'], { queryParams: { reference: ref, montant: prix } });
-    }, 1200);
+      this.router.navigate(['/paiements'], {
+        queryParams: {
+          reference: ref,
+          montant: totalAmount,
+          bagagesCount: bagagesToCreate.length
+        }
+      });
+    }, 800);
+  }
+
+  reserverVoyage(v: VoyageOffre): void {
+    this.openBookingModal(v);
   }
 
   // --- RECHERCHE ET CATALOGUE AUTONOME ---

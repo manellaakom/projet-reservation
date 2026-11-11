@@ -252,6 +252,14 @@
         Réglez votre réservation par carte bancaire via la passerelle nationale tunisienne Paymee.
       </p>
 
+      <div *ngIf="bagagesCount" class="bagages-info-banner" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; background: rgba(36, 150, 237, 0.08); border: 1px solid rgba(36, 150, 237, 0.3); border-left: 4px solid #2496ed; padding: 0.75rem 1rem; border-radius: 6px;">
+        <i class="pi pi-briefcase" style="font-size: 1.5rem; color: #2496ed;"></i>
+        <div>
+          <strong style="color: #0d3c61; display: block;">Dossier Voyageur Consolidé :</strong>
+          <span style="font-size: 0.875rem; color: #475569;">Comprend le billet de voyage + <strong>{{ bagagesCount }} bagage(s)</strong> enregistrés avec succès dans le Module Bagages (Redis).</span>
+        </div>
+      </div>
+
       <div *ngIf="modalErrorMessage" class="alert error-alert">
         {{ modalErrorMessage }}
       </div>
