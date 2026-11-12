@@ -1,6 +1,6 @@
 services:
   # ============================================================================
-  # 1. Infrastructure & Middlewares
+  # 1. Infrastructure Technique & Bases de Données
   # ============================================================================
   redis:
     image: redis:7-alpine
@@ -19,6 +19,21 @@ services:
     networks:
       - skyvoyage-net
 
+  mysql:
+    image: mysql:8.0
+    container_name: skyvoyage-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: recherche_consultation_db
+    volumes:
+      - skyvoyage-mysql-data:/var/lib/mysql
+      - ./Backend/module2-recherche-consultation/database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: skyvoyage-rabbitmq
@@ -31,18 +46,6 @@ services:
     restart: unless-stopped
     networks:
       - skyvoyage-net
-
-  mysql:
-    image: mysql:8.0
-    container_name: skyvoyage-mysql
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: recherche_consultation_db
-    volumes:
-      - skyvoyage-mysql-data:/var/lib/mysql
-      - ./Backend/module2-recherche-consultation/database.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
     networks:
       - skyvoyage-net
@@ -78,7 +81,7 @@ services:
       - skyvoyage-net
 
   # ============================================================================
-  # 2. Socle Technique Spring Cloud
+  # 2. Socle Technique Spring Cloud (Discovery, Config, Gateway)
   # ============================================================================
   discovery:
     build:
@@ -130,6 +133,10 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       # Les services Java/Python sont decouverts via Eureka (lb://) ; Symfony est joint en direct
+      RECHERCHE_URI: http://recherche-consultation:8082
+      BAGAGES_URI: http://gestion-bagages:8081
+      PAIEMENTS_URI: http://reservation-paiement:8084
+      RESERVATIONS_URI: http://gestion-reservation:8003
       SUPPORT_URI: http://support-client:80
     depends_on:
       - discovery
@@ -272,7 +279,24 @@ services:
       - skyvoyage-net
 
   # ============================================================================
-  # 4. Monitoring & Observabilité
+  # ============================================================================
+  # 4. Frontend Angular (Nginx SPA)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: skyvoyage-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - skyvoyage-net
+
+  # ============================================================================
+  # 5. Monitoring & Observabilité (Prometheus & Grafana)
   # ============================================================================
   prometheus:
     image: prom/prometheus:latest
@@ -303,6 +327,7 @@ services:
 networks:
   skyvoyage-net:
     name: skyvoyage-net
+    driver: bridge
 
 volumes:
   reservation-redis-data:

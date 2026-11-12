@@ -160,4 +160,12 @@ export class RechercheConsultationService {
   getKeycloakConfig(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/auth/keycloak/config`);
   }
+
+  /**
+   * 12. Décrémenter le nombre de places disponibles lors d'une réservation
+   */
+  mettreAJourPlaces(id: number, placesReservees: number = 1): Observable<any> {
+    const params = new HttpParams().set('placesReservees', placesReservees.toString());
+    return this.http.patch<any>(`${this.apiUrl}/voyages/${id}/places`, null, { params });
+  }
 }

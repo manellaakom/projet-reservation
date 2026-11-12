@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/recherche/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/recherche/voyages/search").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/recherche/comparer").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/recherche/voyages/**").permitAll()
 
                         // 4. Démonstrations inter-services (Feign & RabbitMQ)
                         .requestMatchers("/api/recherche/inter-services/**").permitAll()

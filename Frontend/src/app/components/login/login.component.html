@@ -1,166 +1,280 @@
 <div class="login-page-container">
-  <div class="login-card">
+  <!-- Master Container 2-Panel -->
+  <div class="auth-master-wrapper">
     
-    <!-- En-tête -->
-    <div class="login-header">
-      <div class="brand-badge">
-        <i class="pi pi-shield"></i>
-      </div>
-      <h2>Authentification SkyVoyage</h2>
-      <p class="subtitle">Sélectionnez un profil préconfiguré ou saisissez vos identifiants Keycloak IAM</p>
-    </div>
-
-    <!-- Bannière si déjà connecté -->
-    <div *ngIf="currentUser" class="active-session-banner">
-      <div class="session-info">
-        <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-star-fill text-warning' : 'pi-user text-primary'"></i>
-        <div>
-          <h4>Session active : <strong>{{ currentUser.username }}</strong></h4>
-          <span class="role-chip" [class.admin-chip]="currentUser.isAdmin">
-            {{ currentUser.isAdmin ? 'Administrateur (Accès Total)' : 'Voyageur (Consultation)' }}
-          </span>
+    <!-- Panneau Gauche : Vitrine Airline & Sécurité -->
+    <div class="auth-hero-pane">
+      <div class="hero-top">
+        <div class="airline-brand">
+          <div class="brand-badge-icon">
+            <i class="pi pi-compass"></i>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">SkyVoyage</span>
+            <span class="brand-sub">AIRLINES TUNISIE</span>
+          </div>
+        </div>
+        <div class="official-tag">
+          <i class="pi pi-shield"></i>
+          <span>Portail Sécurisé</span>
         </div>
       </div>
-      <div class="session-actions">
-        <a routerLink="/" class="btn btn-primary">
-          <i class="pi pi-arrow-right"></i>
-          <span>Entrer dans l'Application</span>
-        </a>
-        <a routerLink="/voyages" class="btn btn-outline">
-          <i class="pi pi-compass"></i>
-          <span>Voyages</span>
-        </a>
-        <button class="btn btn-danger-outline" (click)="logout()">
-          <i class="pi pi-sign-out"></i>
-          <span>Déconnexion</span>
+
+      <div class="hero-content">
+        <h1 class="hero-heading">L'excellence du voyage tunisien, en toute sérénité.</h1>
+        <p class="hero-lead">
+          Connectez-vous pour explorer nos liaisons nationales, enregistrer vos bagages avec tarification automatisée et régler vos réservations en Dinars Tunisiens (DT).
+        </p>
+
+        <!-- Feature Points -->
+        <div class="hero-features">
+          <div class="feature-cardlet">
+            <div class="feature-icon"><i class="pi pi-map-marker"></i></div>
+            <div class="feature-body">
+              <strong>Vols & Liaisons Intérieures</strong>
+              <p>Tunis, Djerba, Tozeur, Tabarka avec tarification dynamique en DT.</p>
+            </div>
+          </div>
+
+          <div class="feature-cardlet">
+            <div class="feature-icon"><i class="pi pi-briefcase"></i></div>
+            <div class="feature-body">
+              <strong>Gestion des Bagages & Soute</strong>
+              <p>Paliers automatiques (30, 50, 70 DT) et persistance Redis.</p>
+            </div>
+          </div>
+
+          <div class="feature-cardlet">
+            <div class="feature-icon"><i class="pi pi-credit-card"></i></div>
+            <div class="feature-body">
+              <strong>Paiement Paymee & Quittances</strong>
+              <p>Règlement en ligne certifié avec reçus officiels instantanés.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-footer">
+        <div class="security-status">
+          <span class="status-dot"></span>
+          <span>Serveur IAM Keycloak actif (Port 8180) • Microservices Spring Cloud</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panneau Droit : Formulaire & Accès -->
+    <div class="auth-form-pane">
+      
+      <!-- En-tête formulaire -->
+      <div class="form-header">
+        <h2>Espace Authentification</h2>
+        <p class="form-subtitle">Choisissez votre mode de connexion pour accéder à vos services</p>
+      </div>
+
+      <!-- Bannière si déjà connecté -->
+      <div *ngIf="currentUser" class="session-active-card">
+        <div class="session-active-top">
+          <div class="user-avatar" [class.admin-avatar]="currentUser.isAdmin">
+            <i class="pi" [ngClass]="currentUser.isAdmin ? 'pi-shield' : 'pi-user'"></i>
+          </div>
+          <div class="user-meta">
+            <span class="meta-status">Session active</span>
+            <h4 class="meta-name">{{ currentUser.username }}</h4>
+            <span class="meta-badge" [class.admin-badge]="currentUser.isAdmin">
+              {{ currentUser.isAdmin ? 'Administrateur SkyVoyage' : 'Voyageur (Passager)' }}
+            </span>
+          </div>
+        </div>
+        <div class="session-active-actions">
+          <button *ngIf="returnUrl && returnUrl !== '/'" type="button" class="btn btn-primary btn-block" (click)="continueToReturnUrl()">
+            <i class="pi pi-credit-card"></i>
+            <span>Continuer vers le Paiement</span>
+          </button>
+          <button *ngIf="!returnUrl || returnUrl === '/'" type="button" class="btn btn-primary btn-block" (click)="continueToReturnUrl()">
+            <i class="pi pi-arrow-right"></i>
+            <span>Accéder au Tableau de Bord</span>
+          </button>
+          <button type="button" class="btn btn-subtle-logout" (click)="logout()">
+            <i class="pi pi-sign-out"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bannière notification returnUrl si non connecté -->
+      <div *ngIf="!currentUser && returnUrl && returnUrl !== '/'" class="alert-return">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <strong>Réservation en cours :</strong>
+          <span>Connectez-vous pour finaliser directement votre voyage et votre paiement.</span>
+        </div>
+      </div>
+
+      <!-- Feedback erreurs / succès -->
+      <div *ngIf="errorMessage" class="alert-status alert-error">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <div *ngIf="successMessage" class="alert-status alert-success">
+        <i class="pi pi-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <!-- Onglets élégants : Express vs Manuel -->
+      <div *ngIf="!currentUser" class="auth-tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'express'"
+          (click)="setTab('express')"
+        >
+          <i class="pi pi-bolt"></i>
+          <span>Accès Rapide</span>
+          <span class="tab-chip">1-Clic</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'credentials'"
+          (click)="setTab('credentials')"
+        >
+          <i class="pi pi-key"></i>
+          <span>Identifiants IAM</span>
         </button>
       </div>
-    </div>
 
-    <!-- Alertes Feedback -->
-    <div *ngIf="errorMessage" class="alert alert-error">
-      <i class="pi pi-exclamation-triangle"></i>
-      <span>{{ errorMessage }}</span>
-    </div>
-    <div *ngIf="successMessage" class="alert alert-success">
-      <i class="pi pi-check-circle"></i>
-      <span>{{ successMessage }}</span>
-    </div>
+      <!-- Contenu Onglet 1 : Accès Rapide (Express) -->
+      <div *ngIf="!currentUser && activeTab === 'express'" class="express-tab-content">
+        <p class="tab-explainer">
+          Sélectionnez un profil préconfiguré pour vous connecter instantanément via Keycloak :
+        </p>
 
-    <!-- Section 1 : Connexion Rapide (2 Comptes Démonstration) -->
-    <div class="quick-login-section">
-      <div class="section-title">
-        <span>Connexion Rapide (Comptes de Démonstration)</span>
-      </div>
-      
-      <div class="quick-cards-grid">
-        <!-- Carte 1 : Administrateur -->
-        <div class="quick-card admin-card" (click)="loginAs('admin')">
-          <div class="card-top">
-            <div class="card-icon">
-              <i class="pi pi-shield"></i>
-            </div>
-            <span class="badge badge-admin">Rôle : ADMIN</span>
-          </div>
-          <h3>Compte Administrateur</h3>
-          <p class="card-desc">Gestion totale des offres, ajout/modification/suppression de voyages, tarification bagages, supervision et statistiques.</p>
-          <div class="credentials-hint">
-            <span>Identifiant : <code>admin</code></span>
-            <span>Mot de passe : <code>admin</code></span>
-          </div>
-          <button class="btn-action admin-btn" [disabled]="loading">
-            <i class="pi pi-lock-open"></i>
-            <span>Se connecter en tant qu'Admin</span>
-          </button>
-        </div>
-
-        <!-- Carte 2 : Voyageur -->
-        <div class="quick-card user-card" (click)="loginAs('voyageur')">
-          <div class="card-top">
-            <div class="card-icon">
+        <div class="profile-cards-stack">
+          <!-- Carte Voyageur -->
+          <div class="profile-card profile-user" (click)="loginAs('voyageur')">
+            <div class="profile-icon">
               <i class="pi pi-user"></i>
             </div>
-            <span class="badge badge-user">Rôle : VOYAGEUR</span>
+            <div class="profile-details">
+              <div class="profile-header-row">
+                <span class="profile-title">Compte Voyageur</span>
+                <span class="profile-tag tag-user">Rôle : USER</span>
+              </div>
+              <p class="profile-desc">
+                Recherche de vols, réservation avec bagages et règlement sécurisé par Paymee.
+              </p>
+              <div class="credentials-capsule">
+                <span>Identifiant : <strong>voyageur</strong></span>
+                <span class="separator">•</span>
+                <span>Mot de passe : <strong>user</strong></span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-connect btn-connect-user"
+              [disabled]="loading"
+              (click)="$event.stopPropagation(); loginAs('voyageur')"
+            >
+              <i class="pi" [ngClass]="loading ? 'pi-spin pi-spinner' : 'pi-arrow-right'"></i>
+              <span>Accéder</span>
+            </button>
           </div>
-          <h3>Compte Voyageur</h3>
-          <p class="card-desc">Consultation du catalogue tunisien en DT, recherche multi-critères, comparateur d'offres, réservation et suivi de bagages.</p>
-          <div class="credentials-hint">
-            <span>Identifiant : <code>voyageur</code></span>
-            <span>Mot de passe : <code>user</code></span>
+
+          <!-- Carte Administrateur -->
+          <div class="profile-card profile-admin" (click)="loginAs('admin')">
+            <div class="profile-icon">
+              <i class="pi pi-shield"></i>
+            </div>
+            <div class="profile-details">
+              <div class="profile-header-row">
+                <span class="profile-title">Compte Administrateur</span>
+                <span class="profile-tag tag-admin">Rôle : ADMIN</span>
+              </div>
+              <p class="profile-desc">
+                Supervision du catalogue, gestion CRUD des voyages et analytique de soute.
+              </p>
+              <div class="credentials-capsule">
+                <span>Identifiant : <strong>admin</strong></span>
+                <span class="separator">•</span>
+                <span>Mot de passe : <strong>admin</strong></span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-connect btn-connect-admin"
+              [disabled]="loading"
+              (click)="$event.stopPropagation(); loginAs('admin')"
+            >
+              <i class="pi" [ngClass]="loading ? 'pi-spin pi-spinner' : 'pi-arrow-right'"></i>
+              <span>Accéder</span>
+            </button>
           </div>
-          <button class="btn-action user-btn" [disabled]="loading">
-            <i class="pi pi-sign-in"></i>
-            <span>Se connecter en tant que Voyageur</span>
+        </div>
+      </div>
+
+      <!-- Contenu Onglet 2 : Formulaire de Saisie Manuelle -->
+      <div *ngIf="!currentUser && activeTab === 'credentials'" class="credentials-tab-content">
+        <form class="credential-form" (ngSubmit)="performLogin()">
+          <div class="field-group">
+            <label for="username">Identifiant Keycloak IAM</label>
+            <div class="field-input-box">
+              <i class="pi pi-user field-icon"></i>
+              <input
+                id="username"
+                type="text"
+                class="field-control"
+                placeholder="ex : voyageur ou admin"
+                [(ngModel)]="username"
+                name="username"
+                [disabled]="loading"
+                autocomplete="username"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="password">Mot de passe</label>
+            <div class="field-input-box">
+              <i class="pi pi-lock field-icon"></i>
+              <input
+                id="password"
+                [type]="showPassword ? 'text' : 'password'"
+                class="field-control"
+                placeholder="Votre mot de passe"
+                [(ngModel)]="password"
+                name="password"
+                [disabled]="loading"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="toggle-eye"
+                (click)="togglePasswordVisibility()"
+                tabindex="-1"
+                title="Afficher/masquer le mot de passe"
+              >
+                <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-submit" [disabled]="loading">
+            <i class="pi" [ngClass]="loading ? 'pi-spin pi-spinner' : 'pi-sign-in'"></i>
+            <span>{{ loading ? 'Authentification en cours...' : 'Se connecter avec Keycloak' }}</span>
           </button>
-        </div>
+        </form>
       </div>
-    </div>
 
-    <!-- Séparateur -->
-    <div class="divider">
-      <span>ou saisie manuelle des identifiants</span>
-    </div>
-
-    <!-- Section 2 : Formulaire de Connexion Manuel -->
-    <form class="login-form" (ngSubmit)="performLogin()">
-      <div class="form-group">
-        <label for="username">Identifiant Keycloak</label>
-        <div class="input-wrapper">
-          <i class="pi pi-user input-icon"></i>
-          <input
-            id="username"
-            type="text"
-            class="form-control"
-            placeholder="ex: admin ou voyageur"
-            [(ngModel)]="username"
-            name="username"
-            [disabled]="loading"
-            autocomplete="username"
-            required
-          />
+      <!-- Pied de panneau discret et professionnel -->
+      <div class="auth-card-footer">
+        <div class="footer-meta">
+          <i class="pi pi-lock"></i>
+          <span>Protocole OAuth2 / OIDC • Realm : <strong>skyvoyage</strong></span>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="password">Mot de passe</label>
-        <div class="input-wrapper">
-          <i class="pi pi-lock input-icon"></i>
-          <input
-            id="password"
-            [type]="showPassword ? 'text' : 'password'"
-            class="form-control"
-            placeholder="Mot de passe"
-            [(ngModel)]="password"
-            name="password"
-            [disabled]="loading"
-            autocomplete="current-password"
-            required
-          />
-          <button
-            type="button"
-            class="toggle-password"
-            (click)="togglePasswordVisibility()"
-            tabindex="-1"
-            title="Afficher/masquer le mot de passe"
-          >
-            <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
-          </button>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-submit" [disabled]="loading">
-        <i class="pi" [ngClass]="loading ? 'pi-spin pi-spinner' : 'pi-sign-in'"></i>
-        <span>{{ loading ? 'Authentification en cours...' : 'Se connecter avec Keycloak' }}</span>
-      </button>
-    </form>
-
-    <!-- Pied de carte informatif -->
-    <div class="login-footer">
-      <div class="keycloak-info">
-        <i class="pi pi-info-circle"></i>
-        <span>Serveur IAM Keycloak : <strong>http://localhost:8180</strong> • Realm : <strong>skyvoyage</strong></span>
-      </div>
     </div>
-
   </div>
 </div>

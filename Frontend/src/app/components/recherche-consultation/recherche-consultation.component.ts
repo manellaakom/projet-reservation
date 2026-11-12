@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { RechercheConsultationService } from '../../services/recherche-consultation.service';
 import { BagageService } from '../../services/bagage.service';
+import { PaiementsService } from '../../services/paiements.service';
 import { BagageRequest } from '../../models/bagage.model';
 import {
   CategorieOffre,
@@ -510,9 +511,17 @@ export class RechercheConsultationComponent implements OnInit {
   tempReservationRef: string = '';
   processingBooking: boolean = false;
 
+  bookingPassengerName: string = 'Voyageur Tunisie';
+  bookingPassengerPhone: string = '+216 22 333 444';
+  bookingCompleted: boolean = false;
+  completedReservationRef: string = '';
+  completedAmount: number = 0;
+  completedBagagesCount: number = 0;
+
   constructor(
     private service: RechercheConsultationService,
     private bagageService: BagageService,
+    private paiementsService: PaiementsService,
     private fb: FormBuilder,
     public authService: AuthService,
     private route: ActivatedRoute,
@@ -588,6 +597,9 @@ export class RechercheConsultationComponent implements OnInit {
     this.bagageSouteCount = 0;
     this.grandBagageCount = 0;
     this.tempReservationRef = `RES-${v.codeVoyage}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const user = this.authService.getCurrentUser();
+    this.bookingPassengerName = user?.username ? (user.username + ' Tunisie') : 'Voyageur Tunisie';
+    this.bookingCompleted = false;
     this.bookingModalOpen = true;
     this.cdr.detectChanges();
   }
@@ -596,13 +608,16 @@ export class RechercheConsultationComponent implements OnInit {
     if (!this.processingBooking) {
       this.bookingModalOpen = false;
       this.bookingVoyage = null;
+      this.bookingCompleted = false;
       this.cdr.detectChanges();
     }
   }
 
   changePlaces(delta: number): void {
+    const maxAvailable = this.bookingVoyage?.placesDisponibles ?? 9;
+    const maxAllowed = Math.min(9, Math.max(1, maxAvailable));
     const next = this.bookingPlaces + delta;
-    if (next >= 1 && next <= 9) {
+    if (next >= 1 && next <= maxAllowed) {
       this.bookingPlaces = next;
       this.cdr.detectChanges();
     }
@@ -690,19 +705,57 @@ export class RechercheConsultationComponent implements OnInit {
       console.warn('Avertissement enregistrement bagage:', err);
     }
 
-    this.showToast('success', 'Réservation et bagages validés !', `Dossier ${ref} enregistré avec ${bagagesToCreate.length} bagage(s). Redirection vers le paiement Paymee (${totalAmount} DT)...`);
-    this.processingBooking = false;
-    this.closeBookingModal();
+    // 3. Enregistrement direct du paiement dans le Module 4 (Paiement)
+    try {
+      await firstValueFrom(this.paiementsService.create({
+        reference: ref,
+        montant: totalAmount,
+        statut: 'Payé',
+        datePaiement: new Date().toISOString()
+      }));
+    } catch (err) {
+      console.warn('Avertissement enregistrement paiement:', err);
+    }
 
-    setTimeout(() => {
-      this.router.navigate(['/paiements'], {
-        queryParams: {
-          reference: ref,
-          montant: totalAmount,
-          bagagesCount: bagagesToCreate.length
+    // 4. Décrémentation automatique du nombre de places disponibles (Module 2 Voyage)
+    try {
+      if (this.bookingVoyage && this.bookingVoyage.id) {
+        await firstValueFrom(this.service.mettreAJourPlaces(this.bookingVoyage.id, this.bookingPlaces));
+        this.bookingVoyage.placesDisponibles = Math.max(0, (this.bookingVoyage.placesDisponibles || 0) - this.bookingPlaces);
+        const match = this.voyages.find(v => v.id === this.bookingVoyage?.id);
+        if (match) {
+          match.placesDisponibles = this.bookingVoyage.placesDisponibles;
         }
-      });
-    }, 800);
+      }
+    } catch (err) {
+      console.warn('Avertissement mise à jour places disponibles:', err);
+      if (this.bookingVoyage) {
+        this.bookingVoyage.placesDisponibles = Math.max(0, (this.bookingVoyage.placesDisponibles || 0) - this.bookingPlaces);
+        const match = this.voyages.find(v => v.id === this.bookingVoyage?.id);
+        if (match) {
+          match.placesDisponibles = this.bookingVoyage.placesDisponibles;
+        }
+      }
+    }
+
+    // 5. Passage à l'écran de confirmation et reçu officiel
+    this.completedReservationRef = ref;
+    this.completedAmount = totalAmount;
+    this.completedBagagesCount = bagagesToCreate.length;
+    this.bookingCompleted = true;
+    this.processingBooking = false;
+    this.showToast('success', 'Réservation & Paiement confirmés !', `Votre dossier ${ref} (${totalAmount} DT) et ${bagagesToCreate.length} bagage(s) ont été validés.`);
+    this.cdr.detectChanges();
+  }
+
+  goToBagages(): void {
+    this.closeBookingModal();
+    this.router.navigate(['/bagages']);
+  }
+
+  goToPaiements(): void {
+    this.closeBookingModal();
+    this.router.navigate(['/paiements']);
   }
 
   reserverVoyage(v: VoyageOffre): void {
